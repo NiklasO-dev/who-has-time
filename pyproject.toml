@@ -1,0 +1,16 @@
+[project]
+name = "who-has-time"
+version = "0.1.0"
+description = "When2meet-style availability scheduling — no accounts, just shareable links"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "flask>=3.0,<4",
+    "flask-sqlalchemy>=3.1,<4",
+    "gunicorn>=22,<24",
+    "python-dotenv>=1.0,<2",
+    "itsdangerous>=2.2,<3",
+]
+
+[dependency-groups]
+dev = []

@@ -1,0 +1,73 @@
+<div class="grid-section">
+    <div class="grid-tabs" role="tablist">
+        {% if mode == 'select' %}
+        <button type="button" class="grid-tab active" data-tab="select" role="tab" aria-selected="true">{{ t.grid_tab_availability }}</button>
+        <button type="button" class="grid-tab" data-tab="heatmap" role="tab" aria-selected="false">{{ t.grid_tab_heatmap }}</button>
+        {% else %}
+        <button type="button" class="grid-tab active" data-tab="heatmap" role="tab" aria-selected="true">{{ t.grid_tab_heatmap }}</button>
+        {% endif %}
+    </div>
+
+    {% if mode == 'select' and can_edit %}
+    <div class="participant-form">
+        <label for="display-name">{{ t.grid_name_label }}</label>
+        <input type="text" id="display-name" maxlength="100" placeholder="{{ t.grid_name_placeholder }}"
+               value="{{ response.display_name if response else '' }}">
+        <div class="grid-actions">
+            <button type="button" id="save-availability" class="contrast">{{ t.grid_save_btn }}</button>
+            <span id="save-status" class="save-status" aria-live="polite"></span>
+        </div>
+    </div>
+    {% elif mode == 'select' and not can_edit %}
+    <p><mark>{{ t.poll_closed_view }}</mark> {{ t.poll_closed_view_hint }}</p>
+    {% endif %}
+
+    {% if response_count == 0 and mode != 'select' %}
+    <p class="empty-state">{{ t.grid_no_responses_heatmap }}</p>
+    {% endif %}
+
+    <div class="grid-wrapper" id="grid-wrapper">
+        <div class="availability-grid" id="availability-grid"
+             data-mode="{{ mode }}"
+             data-response-count="{{ response_count }}">
+            <div class="grid-corner"></div>
+            {% for day, label in days %}
+            <div class="grid-day-header" data-day="{{ day.isoformat() }}">{{ label }}</div>
+            {% endfor %}
+
+            {% for start_minute, end_minute in time_rows %}
+            <div class="grid-time-label">{{ '%02d:%02d'|format(start_minute // 60, start_minute % 60) }}</div>
+            {% for day, label in days %}
+                {% set idx = slot_indices.get((day, start_minute)) %}
+                {% if idx is not none %}
+                    {% set count = heatmap.get(idx, 0) %}
+                    {% set is_selected = idx in selected_slots %}
+                    <button type="button"
+                            class="grid-cell{% if is_selected %} selected{% endif %}"
+                            data-index="{{ idx }}"
+                            data-day="{{ day.isoformat() }}"
+                            data-time="{{ '%02d:%02d'|format(start_minute // 60, start_minute % 60) }}"
+                            data-count="{{ count }}"
+                            aria-label="{{ label }} {{ '%02d:%02d'|format(start_minute // 60, start_minute % 60) }}{% if mode == 'heatmap' and response_count > 0 %}, {{ 'grid_cell_available'|tr(count=count, total=response_count) }}{% endif %}"
+                            style="{% if mode == 'heatmap' and response_count > 0 %}background-color: hsl({{ (120 * count / response_count)|int }}, 65%, {{ 45 + (25 * count / response_count)|int }}%);{% endif %}"
+                            {% if mode == 'heatmap' %}tabindex="-1"{% endif %}>
+                        {% if mode == 'heatmap' and response_count > 0 %}
+                        <span class="cell-count">{{ count }}</span>
+                        {% endif %}
+                    </button>
+                {% else %}
+                    <div class="grid-cell grid-cell-empty"></div>
+                {% endif %}
+            {% endfor %}
+            {% endfor %}
+        </div>
+    </div>
+
+    {% if mode == 'heatmap' or mode == 'select' %}
+    <div class="heatmap-legend">
+        <span class="legend-label">{{ t.grid_legend_fewer }}</span>
+        <div class="legend-bar"></div>
+        <span class="legend-label">{{ t.grid_legend_more }}</span>
+    </div>
+    {% endif %}
+</div>

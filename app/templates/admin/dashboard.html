@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block title %}{{ poll.title }} — {{ t.admin_suffix }}{% endblock %}
+
+{% block nav_how_to_link %}{{ url_for('public.index') }}#how-to-use{% endblock %}
+
+{% block content %}
+<article>
+    <header>
+        <h1>{{ poll.title }}</h1>
+        {% if poll.description %}
+        <p>{{ poll.description }}</p>
+        {% endif %}
+        {% if poll.is_closed %}
+        <p><mark>{{ t.admin_closed_notice }}</mark></p>
+        {% endif %}
+    </header>
+
+    <section class="share-section">
+        <h2>{{ t.admin_share_title }}</h2>
+        <label for="participant-url">{{ t.admin_participant_link }}</label>
+        <div class="copy-row">
+            <input type="text" id="participant-url" readonly value="{{ participant_url }}" class="copy-input">
+            <button type="button" class="outline copy-btn" data-copy-target="participant-url">{{ t.copy_btn }}</button>
+        </div>
+        <small>{{ t.admin_participant_link_hint }}</small>
+
+        <label for="admin-url">{{ t.admin_admin_link }}</label>
+        <div class="copy-row">
+            <input type="text" id="admin-url" readonly value="{{ admin_url }}" class="copy-input">
+            <button type="button" class="outline copy-btn" data-copy-target="admin-url">{{ t.copy_btn }}</button>
+        </div>
+        <small>{{ t.admin_admin_link_hint }}</small>
+    </section>
+
+    <section class="poll-meta">
+        <p>
+            {% if response_count == 1 %}
+            <strong>{{ 'admin_meta_responses_one'|tr(count=response_count) }}</strong>
+            {% else %}
+            <strong>{{ 'admin_meta_responses_many'|tr(count=response_count) }}</strong>
+            {% endif %}
+            ·
+            {{ poll.start_date|format_date_day_month(lang) }} – {{ poll.end_date|format_date_day_month_year(lang) }} ·
+            {{ 'admin_meta_slots'|tr(minutes=poll.slot_minutes) }} · {{ poll.timezone }}
+        </p>
+        <div class="action-row">
+            <a href="{{ url_for('admin.edit', admin_token=poll.admin_token) }}" role="button" class="outline">{{ t.admin_edit_settings }}</a>
+            {% if poll.is_closed %}
+            <form method="post" action="{{ url_for('admin.reopen', admin_token=poll.admin_token) }}" style="display:inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <button type="submit" class="outline">{{ t.admin_reopen_poll }}</button>
+            </form>
+            {% else %}
+            <form method="post" action="{{ url_for('admin.close', admin_token=poll.admin_token) }}" style="display:inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <button type="submit" class="outline secondary">{{ t.admin_close_poll }}</button>
+            </form>
+            {% endif %}
+            <form method="post" action="{{ url_for('admin.delete', admin_token=poll.admin_token) }}"
+                  onsubmit="return confirm({{ t.admin_delete_confirm|tojson }})" style="display:inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <button type="submit" class="outline secondary">{{ t.admin_delete }}</button>
+            </form>
+        </div>
+    </section>
+</article>
+
+{% if responses %}
+<section>
+    <h2>{{ t.admin_responses_title }}</h2>
+    <ul class="response-list">
+        {% for r in responses %}
+        {% set slot_count = r.get_slot_indices()|length %}
+        <li>
+            <strong>{{ r.display_name }}</strong>
+            — {% if slot_count == 1 %}{{ 'admin_response_slots_one'|tr(count=slot_count) }}{% else %}{{ 'admin_response_slots_many'|tr(count=slot_count) }}{% endif %}
+            <small>({{ t.admin_response_updated }} {{ r.updated_at.strftime('%d.%m.%H:%M') }})</small>
+        </li>
+        {% endfor %}
+    </ul>
+</section>
+{% else %}
+<section class="empty-state">
+    <p>{{ t.admin_no_responses }}</p>
+</section>
+{% endif %}
+
+{% include "poll/_grid.html" %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+    window.WHT_GRID = {
+        mode: "heatmap",
+        csrfToken: {{ csrf_token|tojson }},
+        pollToken: {{ poll.participant_token|tojson }},
+        responseCount: {{ response_count }},
+        selectedSlots: [],
+        canEdit: false,
+        saveUrl: null,
+        loadUrl: null,
+        storageKey: "wht_" + {{ poll.participant_token|tojson }},
+        i18n: {
+            nameRequired: {{ t.js_name_required|tojson }},
+            saving: {{ t.js_saving|tojson }},
+            saved: {{ t.js_saved|tojson }},
+            saveFailed: {{ t.js_save_failed|tojson }}
+        }
+    };
+</script>
+<script src="{{ url_for('static', filename='grid.js') }}?v=1"></script>
+{% endblock %}

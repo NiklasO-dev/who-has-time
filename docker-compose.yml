@@ -1,0 +1,23 @@
+services:
+  who-has-time:
+    build: .
+    container_name: who-has-time
+    restart: unless-stopped
+    expose:
+      - "8080"
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: sqlite:////data/who_has_time.db
+      BEHIND_PROXY: "1"
+    volumes:
+      - wht_data:/data
+    networks:
+      - caddy_net
+
+volumes:
+  wht_data:
+
+networks:
+  caddy_net:
+    external: true

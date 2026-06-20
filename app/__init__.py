@@ -1,0 +1,88 @@
+import os
+
+from flask import Flask, g, redirect, request
+from flask_sqlalchemy import SQLAlchemy
+from werkzeug.middleware.proxy_fix import ProxyFix
+
+from app.config import Config, validate_secret_key
+from app.i18n import (
+    DEFAULT_LANGUAGE,
+    LANG_COOKIE,
+    SUPPORTED_LANGUAGES,
+    detect_language,
+    format_date_day_month,
+    format_date_day_month_year,
+    get_translations,
+    translate,
+)
+
+db = SQLAlchemy()
+
+
+def create_app(config_class: type = Config) -> Flask:
+    app = Flask(__name__)
+    app.config.from_object(config_class)
+    validate_secret_key(app.config["SECRET_KEY"])
+
+    if os.environ.get("BEHIND_PROXY", "1") == "1":
+        app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
+
+    db.init_app(app)
+
+    @app.before_request
+    def set_language():
+        if request.path.startswith("/static"):
+            return
+        cookie_lang = request.cookies.get(LANG_COOKIE)
+        accept_lang = request.headers.get("Accept-Language")
+        g.lang = detect_language(accept_lang, cookie_lang)
+        g.t = get_translations(g.lang)
+
+    @app.context_processor
+    def inject_globals():
+        from app.security import generate_csrf_token
+
+        ctx = {
+            "csrf_token": generate_csrf_token(app.config["SECRET_KEY"]),
+            "supported_languages": SUPPORTED_LANGUAGES,
+        }
+        if hasattr(g, "lang"):
+            ctx["lang"] = g.lang
+        if hasattr(g, "t"):
+            ctx["t"] = g.t
+        return ctx
+
+    @app.template_filter("tr")
+    def translate_filter(key: str, **kwargs) -> str:
+        lang = getattr(g, "lang", DEFAULT_LANGUAGE)
+        return translate(lang, key, **kwargs)
+
+    @app.template_filter("format_date_day_month")
+    def format_date_day_month_filter(d, lang: str) -> str:
+        return format_date_day_month(d, lang)
+
+    @app.template_filter("format_date_day_month_year")
+    def format_date_day_month_year_filter(d, lang: str) -> str:
+        return format_date_day_month_year(d, lang)
+
+    from app.routes.admin import bp as admin_bp
+    from app.routes.participant import bp as participant_bp
+    from app.routes.public import bp as public_bp
+
+    app.register_blueprint(public_bp)
+    app.register_blueprint(admin_bp)
+    app.register_blueprint(participant_bp)
+
+    with app.app_context():
+        db.create_all()
+
+    @app.get("/set-lang/<lang>")
+    def set_language_route(lang: str):
+        if lang not in SUPPORTED_LANGUAGES:
+            lang = DEFAULT_LANGUAGE
+        referer = request.headers.get("Referer", "/")
+        response = redirect(referer, code=303)
+        response.set_cookie(LANG_COOKIE, lang, max_age=365 * 24 * 3600, samesite="Lax")
+        return response
+
+    return app

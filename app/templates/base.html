@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="{{ lang }}" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{{ t.site_name }}{% endblock %}</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=1">
+    <script>
+        (function() {
+            var saved = localStorage.getItem('wht_theme');
+            if (saved) document.documentElement.setAttribute('data-theme', saved);
+        })();
+    </script>
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <header class="container">
+        <nav>
+            <ul>
+                <li><a href="{{ url_for('public.index') }}"><strong>{{ t.site_name }}</strong></a></li>
+            </ul>
+            <ul>
+                <li><a href="{% block nav_how_to_link %}{{ url_for('public.index') }}#how-to-use{% endblock %}">{{ t.nav_how_to_use }}</a></li>
+                <li>
+                    <details class="dropdown lang-dropdown">
+                        <summary>{{ t.lang_label }}</summary>
+                        <ul dir="ltr">
+                            <li><a href="/set-lang/en"{% if lang == 'en' %} aria-current="true"{% endif %}>English</a></li>
+                            <li><a href="/set-lang/de"{% if lang == 'de' %} aria-current="true"{% endif %}>Deutsch</a></li>
+                        </ul>
+                    </details>
+                </li>
+                <li><button id="theme-toggle" class="outline secondary theme-toggle-btn" type="button" title="{{ t.theme_toggle }}">🌙</button></li>
+            </ul>
+        </nav>
+    </header>
+    <main class="container">
+        {% block content %}{% endblock %}
+    </main>
+    <footer class="container">
+        <small>{{ t.site_tagline }}</small>
+    </footer>
+    <script>
+        window.WHT_I18N = {
+            copyBtn: {{ t.copy_btn|tojson }},
+            copiedBtn: {{ t.copied_btn|tojson }}
+        };
+    </script>
+    <script src="{{ url_for('static', filename='app.js') }}?v=1"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>
