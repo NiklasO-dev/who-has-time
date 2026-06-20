@@ -60,7 +60,7 @@
                                 data-index="{{ cell.slot_index }}"
                                 data-day="{{ cell.day.isoformat() }}"
                                 data-count="{{ count }}"
-                                {% if attendees %}data-attendees="{{ attendees|tojson }}"{% endif %}
+                                {% if attendees %}data-attendees='{{ attendees|tojson }}'{% endif %}
                                 aria-label="{{ cell.label }}{% if mode == 'heatmap' and response_count > 0 %}, {{ 'grid_cell_available'|tr(count=count, total=response_count) }}{% endif %}"
                                 style="{% if mode == 'heatmap' and response_count > 0 %}background-color: hsl({{ (120 * count / response_count)|int }}, 65%, {{ 45 + (25 * count / response_count)|int }}%);{% endif %}"
                                 {% if mode == 'heatmap' %}tabindex="-1"{% endif %}>
@@ -99,7 +99,7 @@
                             data-day="{{ day.isoformat() }}"
                             data-time="{{ '%02d:%02d'|format(start_minute // 60, start_minute % 60) }}"
                             data-count="{{ count }}"
-                            {% if attendees %}data-attendees="{{ attendees|tojson }}"{% endif %}
+                            {% if attendees %}data-attendees='{{ attendees|tojson }}'{% endif %}
                             aria-label="{{ label }} {{ '%02d:%02d'|format(start_minute // 60, start_minute % 60) }}{% if mode == 'heatmap' and response_count > 0 %}, {{ 'grid_cell_available'|tr(count=count, total=response_count) }}{% endif %}"
                             style="{% if mode == 'heatmap' and response_count > 0 %}background-color: hsl({{ (120 * count / response_count)|int }}, 65%, {{ 45 + (25 * count / response_count)|int }}%);{% endif %}"
                             {% if mode == 'heatmap' %}tabindex="-1"{% endif %}>

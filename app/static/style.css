@@ -83,7 +83,9 @@ footer {
     display: contents;
 }
 
+.action-row button,
 .action-row a[role="button"] {
+    width: auto;
     margin: 0;
 }
 
@@ -555,7 +557,7 @@ footer {
 }
 
 .availability-grid[data-mode="heatmap"] .grid-cell[data-attendees] {
-    cursor: help;
+    cursor: pointer;
 }
 
 .legend-bar {
