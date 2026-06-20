@@ -146,3 +146,12 @@
         <option value="Australia/Sydney">
     </datalist>
 </div>
+
+<div>
+    <label class="checkbox-label">
+        <input type="checkbox" name="show_names_on_heatmap" value="on"
+               {% if form_values and form_values.show_names_on_heatmap %}checked{% endif %}>
+        <span>{{ t.home_show_names_on_heatmap }}</span>
+    </label>
+    <small>{{ t.home_show_names_on_heatmap_hint }}</small>
+</div>

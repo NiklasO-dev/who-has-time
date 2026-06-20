@@ -35,6 +35,10 @@ def _migrate_schema() -> None:
         statements.append(
             "ALTER TABLE polls ADD COLUMN picked_dates TEXT NOT NULL DEFAULT '[]'"
         )
+    if "show_names_on_heatmap" not in columns:
+        statements.append(
+            "ALTER TABLE polls ADD COLUMN show_names_on_heatmap BOOLEAN NOT NULL DEFAULT 0"
+        )
     if "responses" in inspector.get_table_names():
         response_columns = {col["name"] for col in inspector.get_columns("responses")}
         if "edit_token" not in response_columns:

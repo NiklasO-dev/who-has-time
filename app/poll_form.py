@@ -45,6 +45,7 @@ class PollFormData:
     day_start: int | None
     day_end: int | None
     slot_minutes: int
+    show_names_on_heatmap: bool
 
 
 def parse_poll_form(
@@ -64,6 +65,7 @@ def parse_poll_form(
         date_mode = "range"
 
     whole_day = form.get("time_mode") == "whole_day"
+    show_names_on_heatmap = form.get("show_names_on_heatmap") == "on"
     start = _parse_date(form.get("start_date", ""))
     end = _parse_date(form.get("end_date", ""))
     picked_dates = parse_picked_dates(form.get("picked_dates"))
@@ -131,6 +133,7 @@ def parse_poll_form(
         day_start=day_start,
         day_end=day_end,
         slot_minutes=slot_minutes,
+        show_names_on_heatmap=show_names_on_heatmap,
     )
     return data, errors
 
@@ -147,6 +150,7 @@ def apply_poll_form(poll, data: PollFormData) -> None:
     poll.day_end_minute = data.day_end
     poll.slot_minutes = data.slot_minutes
     poll.set_picked_dates(data.picked_dates if data.date_mode == "pick" else [])
+    poll.show_names_on_heatmap = data.show_names_on_heatmap
 
 
 def default_form_values(
@@ -165,6 +169,7 @@ def default_form_values(
         "day_end": "22:00",
         "slot_minutes": "30",
         "timezone": timezone_name,
+        "show_names_on_heatmap": "",
     }
 
 
@@ -181,6 +186,7 @@ def poll_to_form_values(poll) -> dict:
         "day_end": _minute_to_time_value(poll.day_end_minute),
         "slot_minutes": str(poll.slot_minutes),
         "timezone": poll.timezone,
+        "show_names_on_heatmap": "on" if poll.show_names_on_heatmap else "",
     }
 
 

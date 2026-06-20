@@ -143,6 +143,9 @@ def edit(admin_token: str):
             if not errors:
                 poll.title = title
                 poll.description = description
+                poll.show_names_on_heatmap = (
+                    request.form.get("show_names_on_heatmap") == "on"
+                )
                 db.session.commit()
                 return redirect(url_for("admin.dashboard", admin_token=admin_token), code=303)
         else:
