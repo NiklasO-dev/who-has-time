@@ -147,6 +147,65 @@ def compute_heatmap(poll: Poll, responses: list[Response]) -> dict[int, int]:
     return counts
 
 
+@dataclass(frozen=True)
+class TopResult:
+    label: str
+    count: int
+    total: int
+    attendees: list[str]
+
+
+def compute_top_results(
+    poll: Poll,
+    responses: list[Response],
+    *,
+    limit: int = 5,
+    lang: str = "en",
+) -> list[TopResult]:
+    from app.i18n import format_date_short
+
+    if not responses:
+        return []
+
+    heatmap = compute_heatmap(poll, responses)
+    if not heatmap:
+        return []
+
+    attendees_map = compute_slot_attendees(responses)
+    slots_by_index = {slot.index: slot for slot in generate_slots(poll)}
+    total = len(responses)
+
+    ranked = sorted(
+        ((index, count) for index, count in heatmap.items() if count > 0),
+        key=lambda item: (-item[1], item[0]),
+    )
+    if not ranked:
+        return []
+
+    cutoff_count = ranked[min(limit, len(ranked)) - 1][1]
+    results: list[TopResult] = []
+    for index, count in ranked:
+        if count < cutoff_count:
+            break
+        slot = slots_by_index.get(index)
+        if slot is None:
+            continue
+        day_label = format_date_short(slot.day, lang)
+        if poll.is_whole_day:
+            label = day_label
+        else:
+            label = f"{day_label} — {slot.time_label}"
+        results.append(
+            TopResult(
+                label=label,
+                count=count,
+                total=total,
+                attendees=attendees_map.get(index, []),
+            )
+        )
+    return results
+
+
 def compute_slot_attendees(responses: list[Response]) -> dict[int, list[str]]:
     attendees: dict[int, list[str]] = {}
     for response in responses:
