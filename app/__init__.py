@@ -19,6 +19,28 @@ from app.i18n import (
 db = SQLAlchemy()
 
 
+def _migrate_schema() -> None:
+    from sqlalchemy import inspect, text
+
+    inspector = inspect(db.engine)
+    if "polls" not in inspector.get_table_names():
+        return
+    columns = {col["name"] for col in inspector.get_columns("polls")}
+    statements: list[str] = []
+    if "date_mode" not in columns:
+        statements.append(
+            "ALTER TABLE polls ADD COLUMN date_mode VARCHAR(10) NOT NULL DEFAULT 'range'"
+        )
+    if "picked_dates" not in columns:
+        statements.append(
+            "ALTER TABLE polls ADD COLUMN picked_dates TEXT NOT NULL DEFAULT '[]'"
+        )
+    if statements:
+        with db.engine.begin() as conn:
+            for stmt in statements:
+                conn.execute(text(stmt))
+
+
 def create_app(config_class: type = Config) -> Flask:
     app = Flask(__name__)
     app.config.from_object(config_class)
@@ -75,6 +97,7 @@ def create_app(config_class: type = Config) -> Flask:
 
     with app.app_context():
         db.create_all()
+        _migrate_schema()
 
     @app.get("/set-lang/<lang>")
     def set_language_route(lang: str):

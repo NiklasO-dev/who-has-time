@@ -1,11 +1,12 @@
 from datetime import date, timedelta
-from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from flask import Blueprint, abort, current_app, g, redirect, render_template, request, url_for
 
 from app import db
-from app.i18n import translate
+from app.grid import weekday_headers
+from app.i18n import month_names_short, translate
 from app.models import Poll
+from app.poll_form import apply_poll_form, default_form_values, parse_poll_form
 from app.security import validate_csrf_token
 
 bp = Blueprint("public", __name__)
@@ -22,61 +23,14 @@ def _app_base_url() -> str:
     return request.url_root.rstrip("/")
 
 
-def _parse_date(value: str) -> date | None:
-    try:
-        return date.fromisoformat(value)
-    except (TypeError, ValueError):
-        return None
-
-
-def _parse_time_to_minute(value: str) -> int | None:
-    if not value or ":" not in value:
-        return None
-    parts = value.split(":")
-    if len(parts) != 2:
-        return None
-    try:
-        hours, minutes = int(parts[0]), int(parts[1])
-    except ValueError:
-        return None
-    if not (0 <= hours <= 23 and 0 <= minutes <= 59):
-        return None
-    return hours * 60 + minutes
-
-
-def _validate_poll_form(
-    title: str,
-    start: date | None,
-    end: date | None,
-    day_start: int | None,
-    day_end: int | None,
-    slot_minutes: int,
-    timezone_name: str,
-) -> list[str]:
-    errors: list[str] = []
-    if not title:
-        errors.append(_t("error_title_required"))
-    if len(title) > 200:
-        errors.append(_t("error_title_too_long"))
-    if not start or not end:
-        errors.append(_t("error_dates_required"))
-    elif end < start:
-        errors.append(_t("error_end_before_start"))
-    elif (end - start).days + 1 > current_app.config["MAX_POLL_DAYS"]:
-        errors.append(
-            _t("error_max_days", days=current_app.config["MAX_POLL_DAYS"])
-        )
-    if day_start is None or day_end is None:
-        errors.append(_t("error_times_required"))
-    elif day_end <= day_start:
-        errors.append(_t("error_end_time_before_start"))
-    if slot_minutes not in current_app.config["ALLOWED_SLOT_MINUTES"]:
-        errors.append(_t("error_slot_minutes"))
-    try:
-        ZoneInfo(timezone_name)
-    except ZoneInfoNotFoundError:
-        errors.append(_t("error_timezone"))
-    return errors
+def _form_context(form_values: dict | None, default_start: str, default_end: str) -> dict:
+    return {
+        "form_values": form_values,
+        "default_start": default_start,
+        "default_end": default_end,
+        "weekday_headers": weekday_headers(g.lang),
+        "month_names": month_names_short(g.lang),
+    }
 
 
 @bp.route("/health")
@@ -88,11 +42,14 @@ def health():
 def index():
     today = date.today()
     default_end = today + timedelta(days=6)
+    defaults = default_form_values(start=today, end=default_end)
     return render_template(
         "index.html",
+        form_values=defaults,
         default_start=today.isoformat(),
         default_end=default_end.isoformat(),
-        form=None,
+        weekday_headers=weekday_headers(g.lang),
+        month_names=month_names_short(g.lang),
     )
 
 
@@ -102,42 +59,22 @@ def create_poll():
     if not validate_csrf_token(current_app.config["SECRET_KEY"], token):
         abort(400)
 
-    title = (request.form.get("title") or "").strip()
-    description = (request.form.get("description") or "").strip() or None
-    timezone_name = (request.form.get("timezone") or "UTC").strip()
-    start = _parse_date(request.form.get("start_date", ""))
-    end = _parse_date(request.form.get("end_date", ""))
-    day_start = _parse_time_to_minute(request.form.get("day_start", "08:00"))
-    day_end = _parse_time_to_minute(request.form.get("day_end", "22:00"))
-
-    try:
-        slot_minutes = int(request.form.get("slot_minutes", "30"))
-    except ValueError:
-        slot_minutes = 0
-
-    errors = _validate_poll_form(
-        title, start, end, day_start, day_end, slot_minutes, timezone_name
-    )
+    data, errors = parse_poll_form(request.form, lang=g.lang)
 
     if errors:
+        form_values = dict(request.form)
         return render_template(
             "index.html",
             errors=errors,
-            form=request.form,
-            default_start=request.form.get("start_date", ""),
-            default_end=request.form.get("end_date", ""),
+            form_values=form_values,
+            default_start=form_values.get("start_date", ""),
+            default_end=form_values.get("end_date", ""),
+            weekday_headers=weekday_headers(g.lang),
+            month_names=month_names_short(g.lang),
         ), 400
 
-    poll = Poll(
-        title=title,
-        description=description,
-        timezone=timezone_name,
-        start_date=start,
-        end_date=end,
-        day_start_minute=day_start,
-        day_end_minute=day_end,
-        slot_minutes=slot_minutes,
-    )
+    poll = Poll()
+    apply_poll_form(poll, data)
     db.session.add(poll)
     db.session.commit()
 

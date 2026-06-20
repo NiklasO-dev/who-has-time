@@ -2,6 +2,8 @@
 
 {% block title %}{{ poll.title }} — {{ t.site_name }}{% endblock %}
 
+{% block nav_how_to_link %}#{% endblock %}
+
 {% block content %}
 <article>
     <header>
@@ -10,14 +12,23 @@
         <p>{{ poll.description }}</p>
         {% endif %}
         <p class="poll-meta-line">
-            {{ poll.start_date|format_date_day_month(lang) }} – {{ poll.end_date|format_date_day_month_year(lang) }} ·
-            {{ 'poll_meta_slots'|tr(minutes=poll.slot_minutes) }} · {{ poll.timezone }}
+            {% include "partials/poll_meta_line.html" %}
             {% if poll.is_closed %} · <mark>{{ t.closed }}</mark>{% endif %}
         </p>
     </header>
 </article>
 
 {% include "poll/_grid.html" %}
+
+<dialog id="how-it-works-dialog">
+    <article>
+        <header>
+            <button type="button" aria-label="{{ t.dialog_close }}" rel="prev" id="how-it-works-close"></button>
+            <h2>{{ t.home_use_title }}</h2>
+        </header>
+        {% include "partials/poll_how_it_works_content.html" %}
+    </article>
+</dialog>
 {% endblock %}
 
 {% block scripts %}
@@ -41,5 +52,28 @@
         }
     };
 </script>
-<script src="{{ url_for('static', filename='grid.js') }}?v=1"></script>
+<script src="{{ url_for('static', filename='grid.js') }}?v=3"></script>
+<script>
+(function () {
+    var navLink = document.getElementById("nav-how-it-works");
+    var dialog = document.getElementById("how-it-works-dialog");
+    var closeBtn = document.getElementById("how-it-works-close");
+    if (!navLink || !dialog) return;
+
+    navLink.addEventListener("click", function (e) {
+        e.preventDefault();
+        dialog.showModal();
+    });
+
+    if (closeBtn) {
+        closeBtn.addEventListener("click", function () {
+            dialog.close();
+        });
+    }
+
+    dialog.addEventListener("click", function (e) {
+        if (e.target === dialog) dialog.close();
+    });
+})();
+</script>
 {% endblock %}

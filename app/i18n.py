@@ -77,4 +77,20 @@ def format_date_day_month_year(d: date, lang: str) -> str:
     return f"{d.day:02d} {month} {d.year}"
 
 
+def weekday_names_short(lang: str) -> list[str]:
+    lang = lang if lang in SUPPORTED_LANGUAGES else DEFAULT_LANGUAGE
+    return _WEEKDAYS_SHORT[lang]
+
+
+def month_names_short(lang: str) -> list[str]:
+    lang = lang if lang in SUPPORTED_LANGUAGES else DEFAULT_LANGUAGE
+    return _MONTHS_SHORT[lang]
+
+
+def format_calendar_day(d: date, lang: str) -> str:
+    lang = lang if lang in SUPPORTED_LANGUAGES else DEFAULT_LANGUAGE
+    month = _MONTHS_SHORT[lang][d.month - 1]
+    return f"{d.day} {month}"
+
+
 load_translations()

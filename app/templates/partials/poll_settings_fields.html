@@ -1,0 +1,148 @@
+{% set selected_date_mode = form_values.date_mode if form_values else 'range' %}
+{% set selected_time_mode = form_values.time_mode if form_values else 'times' %}
+
+<div class="mode-group">
+    <p class="mode-group-label" id="date-mode-label">{{ t.home_date_mode_label }}</p>
+    <div class="mode-cards" role="radiogroup" aria-labelledby="date-mode-label">
+        <label class="mode-card">
+            <input type="radio" name="date_mode" value="range" id="date-mode-range"
+                   {% if selected_date_mode == 'range' %}checked{% endif %}
+                   {% if locked %}disabled{% endif %}>
+            <span class="mode-card-body">
+                <span class="mode-card-title">{{ t.home_date_mode_range_title }}</span>
+                <span class="mode-card-hint">{{ t.home_date_mode_range_hint }}</span>
+            </span>
+        </label>
+        <label class="mode-card">
+            <input type="radio" name="date_mode" value="pick" id="date-mode-pick"
+                   {% if selected_date_mode == 'pick' %}checked{% endif %}
+                   {% if locked %}disabled{% endif %}>
+            <span class="mode-card-body">
+                <span class="mode-card-title">{{ t.home_date_mode_pick_title }}</span>
+                <span class="mode-card-hint">{{ t.home_date_mode_pick_hint }}</span>
+            </span>
+        </label>
+    </div>
+    {% if locked %}
+    <input type="hidden" name="date_mode" value="{{ selected_date_mode }}">
+    {% endif %}
+</div>
+
+<div class="mode-group">
+    <p class="mode-group-label" id="time-mode-label">{{ t.home_time_mode_label }}</p>
+    <div class="mode-cards" role="radiogroup" aria-labelledby="time-mode-label">
+        <label class="mode-card">
+            <input type="radio" name="time_mode" value="times" id="time-mode-times"
+                   {% if selected_time_mode == 'times' %}checked{% endif %}
+                   {% if locked %}disabled{% endif %}>
+            <span class="mode-card-body">
+                <span class="mode-card-title">{{ t.home_time_mode_times_title }}</span>
+                <span class="mode-card-hint">{{ t.home_time_mode_times_hint }}</span>
+            </span>
+        </label>
+        <label class="mode-card">
+            <input type="radio" name="time_mode" value="whole_day" id="time-mode-whole-day"
+                   {% if selected_time_mode == 'whole_day' %}checked{% endif %}
+                   {% if locked %}disabled{% endif %}>
+            <span class="mode-card-body">
+                <span class="mode-card-title">{{ t.home_time_mode_whole_day_title }}</span>
+                <span class="mode-card-hint">{{ t.home_time_mode_whole_day_hint }}</span>
+            </span>
+        </label>
+    </div>
+    {% if locked %}
+    <input type="hidden" name="time_mode" value="{{ selected_time_mode }}">
+    {% endif %}
+</div>
+
+<div id="range-date-fields">
+    <div class="form-grid">
+        <div>
+            <label for="start_date">{{ t.home_field_start_date }}</label>
+            <input type="date" id="start_date" name="start_date" required
+                   value="{{ form_values.start_date if form_values else default_start }}"
+                   {% if locked %}readonly{% endif %}>
+        </div>
+        <div>
+            <label for="end_date">{{ t.home_field_end_date }}</label>
+            <input type="date" id="end_date" name="end_date" required
+                   value="{{ form_values.end_date if form_values else default_end }}"
+                   {% if locked %}readonly{% endif %}>
+        </div>
+    </div>
+</div>
+
+<div id="pick-date-fields" hidden>
+    <p class="field-hint">{{ t.home_pick_dates_hint }}</p>
+    <div class="form-grid">
+        <div>
+            <label for="pick_window_start">{{ t.home_field_start_date }}</label>
+            <input type="date" id="pick_window_start"
+                   value="{{ form_values.start_date if form_values else default_start }}"
+                   {% if locked %}readonly{% endif %}>
+        </div>
+        <div>
+            <label for="pick_window_end">{{ t.home_field_end_date }}</label>
+            <input type="date" id="pick_window_end"
+                   value="{{ form_values.end_date if form_values else default_end }}"
+                   {% if locked %}readonly{% endif %}>
+        </div>
+    </div>
+    <input type="hidden" id="pick_start_date"
+           value="{{ form_values.start_date if form_values else default_start }}">
+    <input type="hidden" id="pick_end_date"
+           value="{{ form_values.end_date if form_values else default_end }}">
+    <input type="hidden" id="picked_dates"
+           value="{{ form_values.picked_dates if form_values else '[]' }}">
+    <div class="date-picker-wrapper">
+        <div class="availability-grid calendar-grid date-picker-grid" id="date-picker-calendar" aria-label="{{ t.home_pick_dates_label }}"></div>
+    </div>
+    <p class="pick-count" id="pick-count" aria-live="polite"></p>
+</div>
+
+<div id="time-fields">
+    <div class="form-grid">
+        <div>
+            <label for="day_start">{{ t.home_field_day_start }}</label>
+            <input type="time" id="day_start" name="day_start"
+                   value="{{ form_values.day_start if form_values else '08:00' }}"
+                   {% if locked %}readonly{% endif %}>
+        </div>
+        <div>
+            <label for="day_end">{{ t.home_field_day_end }}</label>
+            <input type="time" id="day_end" name="day_end"
+                   value="{{ form_values.day_end if form_values else '22:00' }}"
+                   {% if locked %}readonly{% endif %}>
+        </div>
+    </div>
+
+    <label for="slot_minutes">{{ t.home_field_slot_minutes }}</label>
+    <select id="slot_minutes" name="slot_minutes" {% if locked %}disabled{% endif %}>
+        {% set selected_slot = form_values.slot_minutes if form_values else '30' %}
+        <option value="15" {% if selected_slot == '15' %}selected{% endif %}>{{ t.home_slot_15 }}</option>
+        <option value="30" {% if selected_slot == '30' %}selected{% endif %}>{{ t.home_slot_30 }}</option>
+        <option value="60" {% if selected_slot == '60' %}selected{% endif %}>{{ t.home_slot_60 }}</option>
+    </select>
+    {% if locked %}
+    <input type="hidden" name="slot_minutes" value="{{ form_values.slot_minutes }}">
+    {% endif %}
+</div>
+
+<div id="timezone-fields">
+    <label for="timezone">{{ t.home_field_timezone }}</label>
+    <input type="text" id="timezone" name="timezone" list="timezones"
+           value="{{ form_values.timezone if form_values else 'Europe/Berlin' }}"
+           placeholder="Europe/Berlin"
+           {% if locked %}readonly{% endif %}>
+    <datalist id="timezones">
+        <option value="UTC">
+        <option value="Europe/Berlin">
+        <option value="Europe/London">
+        <option value="Europe/Paris">
+        <option value="America/New_York">
+        <option value="America/Chicago">
+        <option value="America/Los_Angeles">
+        <option value="Asia/Tokyo">
+        <option value="Australia/Sydney">
+    </datalist>
+</div>

@@ -27,23 +27,57 @@
     {% endif %}
 
     <div class="grid-wrapper" id="grid-wrapper">
+        {% if poll.is_whole_day %}
+        <div class="availability-grid dates-only calendar-grid" id="availability-grid"
+             data-mode="{{ mode }}"
+             data-response-count="{{ response_count }}">
+            {% for weekday in weekday_headers %}
+            <div class="calendar-weekday-header{% if loop.index0 >= 5 %} weekend{% endif %}">{{ weekday }}</div>
+            {% endfor %}
+
+            {% for week in calendar_weeks %}
+                {% for cell in week %}
+                    {% if cell.in_range and cell.slot_index is not none %}
+                        {% set count = heatmap.get(cell.slot_index, 0) %}
+                        {% set is_selected = cell.slot_index in selected_slots %}
+                        <button type="button"
+                                class="grid-cell calendar-cell{% if cell.is_weekend %} weekend{% endif %}{% if is_selected %} selected{% endif %}"
+                                data-index="{{ cell.slot_index }}"
+                                data-day="{{ cell.day.isoformat() }}"
+                                data-count="{{ count }}"
+                                aria-label="{{ cell.label }}{% if mode == 'heatmap' and response_count > 0 %}, {{ 'grid_cell_available'|tr(count=count, total=response_count) }}{% endif %}"
+                                style="{% if mode == 'heatmap' and response_count > 0 %}background-color: hsl({{ (120 * count / response_count)|int }}, 65%, {{ 45 + (25 * count / response_count)|int }}%);{% endif %}"
+                                {% if mode == 'heatmap' %}tabindex="-1"{% endif %}>
+                            <span class="calendar-day-label">{{ cell.label }}</span>
+                            {% if mode == 'heatmap' and response_count > 0 %}
+                            <span class="cell-count">{{ count }}</span>
+                            {% endif %}
+                        </button>
+                    {% else %}
+                        <div class="grid-cell calendar-cell calendar-cell-outside{% if cell.is_weekend %} weekend{% endif %}"
+                             aria-hidden="true"></div>
+                    {% endif %}
+                {% endfor %}
+            {% endfor %}
+        </div>
+        {% else %}
         <div class="availability-grid" id="availability-grid"
              data-mode="{{ mode }}"
              data-response-count="{{ response_count }}">
             <div class="grid-corner"></div>
-            {% for day, label in days %}
-            <div class="grid-day-header" data-day="{{ day.isoformat() }}">{{ label }}</div>
+            {% for day, label, is_weekend in days %}
+            <div class="grid-day-header{% if is_weekend %} weekend{% endif %}" data-day="{{ day.isoformat() }}">{{ label }}</div>
             {% endfor %}
 
             {% for start_minute, end_minute in time_rows %}
             <div class="grid-time-label">{{ '%02d:%02d'|format(start_minute // 60, start_minute % 60) }}</div>
-            {% for day, label in days %}
+            {% for day, label, is_weekend in days %}
                 {% set idx = slot_indices.get((day, start_minute)) %}
                 {% if idx is not none %}
                     {% set count = heatmap.get(idx, 0) %}
                     {% set is_selected = idx in selected_slots %}
                     <button type="button"
-                            class="grid-cell{% if is_selected %} selected{% endif %}"
+                            class="grid-cell{% if is_weekend %} weekend{% endif %}{% if is_selected %} selected{% endif %}"
                             data-index="{{ idx }}"
                             data-day="{{ day.isoformat() }}"
                             data-time="{{ '%02d:%02d'|format(start_minute // 60, start_minute % 60) }}"
@@ -56,11 +90,12 @@
                         {% endif %}
                     </button>
                 {% else %}
-                    <div class="grid-cell grid-cell-empty"></div>
+                    <div class="grid-cell grid-cell-empty{% if is_weekend %} weekend{% endif %}"></div>
                 {% endif %}
             {% endfor %}
             {% endfor %}
         </div>
+        {% endif %}
     </div>
 
     {% if mode == 'heatmap' or mode == 'select' %}

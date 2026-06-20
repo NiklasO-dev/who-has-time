@@ -41,8 +41,7 @@
             <strong>{{ 'admin_meta_responses_many'|tr(count=response_count) }}</strong>
             {% endif %}
             ·
-            {{ poll.start_date|format_date_day_month(lang) }} – {{ poll.end_date|format_date_day_month_year(lang) }} ·
-            {{ 'admin_meta_slots'|tr(minutes=poll.slot_minutes) }} · {{ poll.timezone }}
+            {% include "partials/poll_meta_line.html" %}
         </p>
         <div class="action-row">
             <a href="{{ url_for('admin.edit', admin_token=poll.admin_token) }}" role="button" class="outline">{{ t.admin_edit_settings }}</a>
@@ -109,5 +108,5 @@
         }
     };
 </script>
-<script src="{{ url_for('static', filename='grid.js') }}?v=1"></script>
+<script src="{{ url_for('static', filename='grid.js') }}?v=3"></script>
 {% endblock %}

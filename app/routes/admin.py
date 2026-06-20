@@ -3,10 +3,19 @@ from datetime import datetime, timezone
 from flask import Blueprint, abort, current_app, g, redirect, render_template, request, url_for
 
 from app import db
-from app.grid import compute_heatmap, day_labels, generate_slots, slot_map, unique_time_rows
-from app.i18n import translate
+from app.grid import (
+    calendar_weeks,
+    compute_heatmap,
+    day_labels,
+    generate_slots,
+    slot_map,
+    unique_time_rows,
+    weekday_headers,
+)
+from app.i18n import month_names_short, translate
 from app.models import Poll
-from app.routes.public import _parse_date, _parse_time_to_minute, build_admin_url, build_participant_url
+from app.poll_form import apply_poll_form, parse_poll_form, poll_to_form_values
+from app.routes.public import build_admin_url, build_participant_url
 from app.security import validate_csrf_token
 
 bp = Blueprint("admin", __name__)
@@ -23,11 +32,6 @@ def _get_poll(admin_token: str) -> Poll:
     return poll
 
 
-def _minute_to_time_value(minute: int) -> str:
-    h, m = divmod(minute, 60)
-    return f"{h:02d}:{m:02d}"
-
-
 def _grid_context(poll: Poll, mode: str = "heatmap"):
     responses = poll.responses
     slots = generate_slots(poll)
@@ -39,6 +43,8 @@ def _grid_context(poll: Poll, mode: str = "heatmap"):
         "slots": slots,
         "time_rows": unique_time_rows(poll),
         "days": day_labels(poll, g.lang),
+        "weekday_headers": weekday_headers(g.lang),
+        "calendar_weeks": calendar_weeks(poll, g.lang),
         "heatmap": heatmap,
         "response_count": total,
         "responses": responses,
@@ -61,72 +67,45 @@ def dashboard(admin_token: str):
 def edit(admin_token: str):
     poll = _get_poll(admin_token)
     errors: list[str] = []
+    has_responses = bool(poll.responses)
+    form_values = poll_to_form_values(poll)
 
     if request.method == "POST":
         token = request.form.get("csrf_token")
         if not validate_csrf_token(current_app.config["SECRET_KEY"], token):
             abort(400)
 
-        title = (request.form.get("title") or "").strip()
-        description = (request.form.get("description") or "").strip() or None
-        timezone_name = (request.form.get("timezone") or poll.timezone).strip()
-        start = _parse_date(request.form.get("start_date", ""))
-        end = _parse_date(request.form.get("end_date", ""))
-        day_start = _parse_time_to_minute(request.form.get("day_start", ""))
-        day_end = _parse_time_to_minute(request.form.get("day_end", ""))
-        try:
-            slot_minutes = int(request.form.get("slot_minutes", str(poll.slot_minutes)))
-        except ValueError:
-            slot_minutes = 0
-
-        if not title:
-            errors.append(_t("error_title_required"))
-
-        has_responses = bool(poll.responses)
-
         if has_responses:
+            title = (request.form.get("title") or "").strip()
+            description = (request.form.get("description") or "").strip() or None
+            if not title:
+                errors.append(_t("error_title_required"))
             if not errors:
                 poll.title = title
                 poll.description = description
                 db.session.commit()
                 return redirect(url_for("admin.dashboard", admin_token=admin_token), code=303)
         else:
-            if not start or not end or end < start:
-                errors.append(_t("error_date_range"))
-            elif (end - start).days + 1 > current_app.config["MAX_POLL_DAYS"]:
-                errors.append(
-                    _t("error_max_days", days=current_app.config["MAX_POLL_DAYS"])
-                )
-            if day_start is None or day_end is None or day_end <= day_start:
-                errors.append(_t("error_time_range"))
-            if slot_minutes not in current_app.config["ALLOWED_SLOT_MINUTES"]:
-                errors.append(_t("error_slot_minutes"))
-            from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
-
-            try:
-                ZoneInfo(timezone_name)
-            except ZoneInfoNotFoundError:
-                errors.append(_t("error_timezone"))
-
+            data, errors = parse_poll_form(
+                request.form,
+                lang=g.lang,
+                default_timezone=poll.timezone,
+                default_slot_minutes=poll.slot_minutes,
+            )
             if not errors:
-                poll.title = title
-                poll.description = description
-                poll.timezone = timezone_name
-                poll.start_date = start
-                poll.end_date = end
-                poll.day_start_minute = day_start
-                poll.day_end_minute = day_end
-                poll.slot_minutes = slot_minutes
+                apply_poll_form(poll, data)
                 db.session.commit()
                 return redirect(url_for("admin.dashboard", admin_token=admin_token), code=303)
+            form_values = dict(request.form)
 
     return render_template(
         "admin/edit.html",
         poll=poll,
         errors=errors,
-        day_start_value=_minute_to_time_value(poll.day_start_minute),
-        day_end_value=_minute_to_time_value(poll.day_end_minute),
-        has_responses=bool(poll.responses),
+        form_values=form_values,
+        has_responses=has_responses,
+        weekday_headers=weekday_headers(g.lang),
+        month_names=month_names_short(g.lang),
         participant_url=build_participant_url(poll.participant_token),
     )
 

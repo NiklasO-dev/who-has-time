@@ -25,7 +25,9 @@ class Poll(db.Model):
     participant_token: Mapped[str] = mapped_column(
         String(64), unique=True, nullable=False, default=generate_token
     )
-    poll_type: Mapped[str] = mapped_column(String(20), nullable=False, default="grid")
+    poll_type: Mapped[str] = mapped_column(String(20), nullable=False, default="times")
+    date_mode: Mapped[str] = mapped_column(String(10), nullable=False, default="range")
+    picked_dates: Mapped[str] = mapped_column(Text, nullable=False, default="[]")
     timezone: Mapped[str] = mapped_column(String(64), nullable=False, default="UTC")
     start_date: Mapped[date] = mapped_column(Date, nullable=False)
     end_date: Mapped[date] = mapped_column(Date, nullable=False)
@@ -46,8 +48,41 @@ class Poll(db.Model):
         return self.closed_at is not None
 
     @property
+    def is_whole_day(self) -> bool:
+        return self.poll_type in ("dates_only", "whole_day")
+
+    @property
+    def is_dates_only(self) -> bool:
+        return self.is_whole_day
+
+    @property
+    def is_pick_mode(self) -> bool:
+        return self.date_mode == "pick"
+
+    @property
+    def is_range_mode(self) -> bool:
+        return self.date_mode == "range"
+
+    @property
     def day_count(self) -> int:
+        if self.is_pick_mode:
+            return len(self.get_picked_dates())
         return (self.end_date - self.start_date).days + 1
+
+    def get_picked_dates(self) -> list[date]:
+        try:
+            data = json.loads(self.picked_dates)
+            if isinstance(data, list):
+                dates: list[date] = []
+                for item in data:
+                    dates.append(date.fromisoformat(str(item)))
+                return sorted(set(dates))
+        except (json.JSONDecodeError, TypeError, ValueError):
+            pass
+        return []
+
+    def set_picked_dates(self, dates: list[date]) -> None:
+        self.picked_dates = json.dumps(sorted({d.isoformat() for d in dates}))
 
 
 class Response(db.Model):

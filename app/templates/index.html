@@ -25,61 +25,13 @@
         <label for="title">{{ t.home_field_title }}</label>
         <input type="text" id="title" name="title" required maxlength="200"
                placeholder="{{ t.home_field_title_placeholder }}"
-               value="{{ form.title if form else '' }}">
+               value="{{ form_values.title if form_values else '' }}">
 
         <label for="description">{{ t.home_field_description }} <small>({{ t.optional }})</small></label>
         <textarea id="description" name="description" rows="2"
-                  placeholder="{{ t.home_field_description_placeholder }}">{{ form.description if form else '' }}</textarea>
+                  placeholder="{{ t.home_field_description_placeholder }}">{{ form_values.description if form_values else '' }}</textarea>
 
-        <div class="form-grid">
-            <div>
-                <label for="start_date">{{ t.home_field_start_date }}</label>
-                <input type="date" id="start_date" name="start_date" required
-                       value="{{ form.start_date if form else default_start }}">
-            </div>
-            <div>
-                <label for="end_date">{{ t.home_field_end_date }}</label>
-                <input type="date" id="end_date" name="end_date" required
-                       value="{{ form.end_date if form else default_end }}">
-            </div>
-        </div>
-
-        <div class="form-grid">
-            <div>
-                <label for="day_start">{{ t.home_field_day_start }}</label>
-                <input type="time" id="day_start" name="day_start" required
-                       value="{{ form.day_start if form else '08:00' }}">
-            </div>
-            <div>
-                <label for="day_end">{{ t.home_field_day_end }}</label>
-                <input type="time" id="day_end" name="day_end" required
-                       value="{{ form.day_end if form else '22:00' }}">
-            </div>
-        </div>
-
-        <label for="slot_minutes">{{ t.home_field_slot_minutes }}</label>
-        <select id="slot_minutes" name="slot_minutes" required>
-            {% set selected_slot = form.slot_minutes if form else '30' %}
-            <option value="15" {% if selected_slot == '15' %}selected{% endif %}>{{ t.home_slot_15 }}</option>
-            <option value="30" {% if selected_slot == '30' %}selected{% endif %}>{{ t.home_slot_30 }}</option>
-            <option value="60" {% if selected_slot == '60' %}selected{% endif %}>{{ t.home_slot_60 }}</option>
-        </select>
-
-        <label for="timezone">{{ t.home_field_timezone }}</label>
-        <input type="text" id="timezone" name="timezone" list="timezones"
-               value="{{ form.timezone if form else 'Europe/Berlin' }}"
-               placeholder="Europe/Berlin">
-        <datalist id="timezones">
-            <option value="UTC">
-            <option value="Europe/Berlin">
-            <option value="Europe/London">
-            <option value="Europe/Paris">
-            <option value="America/New_York">
-            <option value="America/Chicago">
-            <option value="America/Los_Angeles">
-            <option value="Asia/Tokyo">
-            <option value="Australia/Sydney">
-        </datalist>
+        {% include "partials/poll_settings_fields.html" %}
 
         <button type="submit">{{ t.home_submit }}</button>
     </form>
@@ -87,11 +39,19 @@
 
 <section id="how-to-use">
     <h2>{{ t.home_use_title }}</h2>
-    <ol>
-        <li>{{ t.howto_1 }}</li>
-        <li>{{ t.howto_2 }}</li>
-        <li>{{ t.howto_3 }}</li>
-        <li>{{ t.howto_4 }}</li>
-    </ol>
+    {% include "partials/how_it_works_content.html" %}
 </section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    window.WHT_DATE_PICKER = {
+        locked: false,
+        weekdays: {{ weekday_headers|tojson }},
+        months: {{ month_names|tojson }},
+        countLabel: {{ t.home_pick_dates_count|tojson }},
+        invalidRange: {{ t.home_pick_dates_invalid_range|tojson }}
+    };
+</script>
+<script src="{{ url_for('static', filename='date_picker.js') }}?v=2"></script>
 {% endblock %}

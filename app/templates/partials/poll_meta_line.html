@@ -1,0 +1,11 @@
+{% if poll.is_pick_mode %}
+{{ 'poll_meta_picked_dates'|tr(count=poll.day_count) }}
+{% else %}
+{{ poll.start_date|format_date_day_month(lang) }} – {{ poll.end_date|format_date_day_month_year(lang) }}
+{% endif %}
+·
+{% if poll.is_whole_day %}
+{{ t.poll_meta_whole_day }}
+{% else %}
+{{ 'poll_meta_slots'|tr(minutes=poll.slot_minutes) }} · {{ poll.timezone }}
+{% endif %}

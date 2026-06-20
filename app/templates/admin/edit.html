@@ -27,56 +27,28 @@
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
 
         <label for="title">{{ t.home_field_title }}</label>
-        <input type="text" id="title" name="title" required maxlength="200" value="{{ poll.title }}">
+        <input type="text" id="title" name="title" required maxlength="200" value="{{ form_values.title }}">
 
         <label for="description">{{ t.home_field_description }}</label>
-        <textarea id="description" name="description" rows="2">{{ poll.description or '' }}</textarea>
+        <textarea id="description" name="description" rows="2">{{ form_values.description }}</textarea>
 
-        <div class="form-grid">
-            <div>
-                <label for="start_date">{{ t.home_field_start_date }}</label>
-                <input type="date" id="start_date" name="start_date" required
-                       value="{{ poll.start_date.isoformat() }}"
-                       {% if has_responses %}readonly{% endif %}>
-            </div>
-            <div>
-                <label for="end_date">{{ t.home_field_end_date }}</label>
-                <input type="date" id="end_date" name="end_date" required
-                       value="{{ poll.end_date.isoformat() }}"
-                       {% if has_responses %}readonly{% endif %}>
-            </div>
-        </div>
-
-        <div class="form-grid">
-            <div>
-                <label for="day_start">{{ t.home_field_day_start }}</label>
-                <input type="time" id="day_start" name="day_start" required
-                       value="{{ day_start_value }}"
-                       {% if has_responses %}readonly{% endif %}>
-            </div>
-            <div>
-                <label for="day_end">{{ t.home_field_day_end }}</label>
-                <input type="time" id="day_end" name="day_end" required
-                       value="{{ day_end_value }}"
-                       {% if has_responses %}readonly{% endif %}>
-            </div>
-        </div>
-
-        <label for="slot_minutes">{{ t.home_field_slot_minutes }}</label>
-        <select id="slot_minutes" name="slot_minutes" required {% if has_responses %}disabled{% endif %}>
-            <option value="15" {% if poll.slot_minutes == 15 %}selected{% endif %}>{{ t.home_slot_15 }}</option>
-            <option value="30" {% if poll.slot_minutes == 30 %}selected{% endif %}>{{ t.home_slot_30 }}</option>
-            <option value="60" {% if poll.slot_minutes == 60 %}selected{% endif %}>{{ t.home_slot_60 }}</option>
-        </select>
-        {% if has_responses %}
-        <input type="hidden" name="slot_minutes" value="{{ poll.slot_minutes }}">
-        {% endif %}
-
-        <label for="timezone">{{ t.home_field_timezone }}</label>
-        <input type="text" id="timezone" name="timezone" value="{{ poll.timezone }}"
-               {% if has_responses %}readonly{% endif %}>
+        {% set locked = has_responses %}
+        {% include "partials/poll_settings_fields.html" %}
 
         <button type="submit">{{ t.admin_save_changes }}</button>
     </form>
 </article>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    window.WHT_DATE_PICKER = {
+        locked: {{ has_responses|tojson }},
+        weekdays: {{ weekday_headers|tojson }},
+        months: {{ month_names|tojson }},
+        countLabel: {{ t.home_pick_dates_count|tojson }},
+        invalidRange: {{ t.home_pick_dates_invalid_range|tojson }}
+    };
+</script>
+<script src="{{ url_for('static', filename='date_picker.js') }}?v=2"></script>
 {% endblock %}

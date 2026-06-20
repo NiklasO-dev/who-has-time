@@ -6,8 +6,12 @@
     var wrapper = document.getElementById("grid-wrapper");
     if (!grid) return;
 
-    var dayCount = grid.querySelectorAll(".grid-day-header").length;
-    grid.style.setProperty("--day-count", String(dayCount));
+    var dayCount = grid.classList.contains("calendar-grid")
+        ? 7
+        : grid.querySelectorAll(".grid-day-header").length;
+    if (dayCount) {
+        grid.style.setProperty("--day-count", String(dayCount));
+    }
 
     var selected = new Set(config.selectedSlots || []);
     var isDragging = false;

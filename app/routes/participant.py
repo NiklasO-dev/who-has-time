@@ -4,7 +4,15 @@ from collections import defaultdict
 from flask import Blueprint, abort, current_app, g, jsonify, render_template, request
 
 from app import db
-from app.grid import compute_heatmap, day_labels, generate_slots, slot_map, unique_time_rows
+from app.grid import (
+    calendar_weeks,
+    compute_heatmap,
+    day_labels,
+    generate_slots,
+    slot_map,
+    unique_time_rows,
+    weekday_headers,
+)
 from app.i18n import translate
 from app.models import Poll, Response
 from app.security import validate_csrf_token
@@ -49,6 +57,8 @@ def _grid_context(poll: Poll, mode: str = "select", response: Response | None = 
         "slots": slots,
         "time_rows": unique_time_rows(poll),
         "days": day_labels(poll, g.lang),
+        "weekday_headers": weekday_headers(g.lang),
+        "calendar_weeks": calendar_weeks(poll, g.lang),
         "heatmap": heatmap,
         "response_count": len(responses),
         "selected_slots": sorted(selected),
