@@ -147,6 +147,16 @@ def compute_heatmap(poll: Poll, responses: list[Response]) -> dict[int, int]:
     return counts
 
 
+def compute_slot_attendees(responses: list[Response]) -> dict[int, list[str]]:
+    attendees: dict[int, list[str]] = {}
+    for response in responses:
+        for index in response.get_slot_indices():
+            attendees.setdefault(index, []).append(response.display_name)
+    for names in attendees.values():
+        names.sort()
+    return attendees
+
+
 def slot_map(poll: Poll) -> dict[tuple[date, int], int]:
     return {(slot.day, slot.start_minute): slot.index for slot in generate_slots(poll)}
 

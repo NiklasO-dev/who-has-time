@@ -1,4 +1,8 @@
 <div class="grid-section">
+    {% if show_grid_tabs is not defined %}
+        {% set show_grid_tabs = (mode == 'select') %}
+    {% endif %}
+    {% if show_grid_tabs %}
     <div class="grid-tabs" role="tablist">
         {% if mode == 'select' %}
         <button type="button" class="grid-tab active" data-tab="select" role="tab" aria-selected="true">{{ t.grid_tab_availability }}</button>
@@ -7,6 +11,7 @@
         <button type="button" class="grid-tab active" data-tab="heatmap" role="tab" aria-selected="true">{{ t.grid_tab_heatmap }}</button>
         {% endif %}
     </div>
+    {% endif %}
 
     {% if mode == 'select' and can_edit %}
     <div class="participant-form">
@@ -16,6 +21,15 @@
         <div class="grid-actions">
             <button type="button" id="save-availability" class="contrast">{{ t.grid_save_btn }}</button>
             <span id="save-status" class="save-status" aria-live="polite"></span>
+        </div>
+        <div id="edit-link-section" class="edit-link-section"{% if not response %} hidden{% endif %}>
+            <p><strong>{{ t.grid_edit_link_label }}</strong></p>
+            <p class="edit-link-hint">{{ t.grid_edit_link_hint }}</p>
+            <div class="copy-row">
+                <input type="text" id="edit-url" readonly class="copy-input"
+                       value="{% if response %}{{ build_edit_url(poll.participant_token, response.edit_token) }}{% endif %}">
+                <button type="button" class="outline copy-btn" data-copy-target="edit-url">{{ t.copy_btn }}</button>
+            </div>
         </div>
     </div>
     {% elif mode == 'select' and not can_edit %}
@@ -40,11 +54,13 @@
                     {% if cell.in_range and cell.slot_index is not none %}
                         {% set count = heatmap.get(cell.slot_index, 0) %}
                         {% set is_selected = cell.slot_index in selected_slots %}
+                        {% set attendees = slot_attendees.get(cell.slot_index, []) if slot_attendees is defined else [] %}
                         <button type="button"
                                 class="grid-cell calendar-cell{% if cell.is_weekend %} weekend{% endif %}{% if is_selected %} selected{% endif %}"
                                 data-index="{{ cell.slot_index }}"
                                 data-day="{{ cell.day.isoformat() }}"
                                 data-count="{{ count }}"
+                                {% if attendees %}data-attendees="{{ attendees|tojson }}"{% endif %}
                                 aria-label="{{ cell.label }}{% if mode == 'heatmap' and response_count > 0 %}, {{ 'grid_cell_available'|tr(count=count, total=response_count) }}{% endif %}"
                                 style="{% if mode == 'heatmap' and response_count > 0 %}background-color: hsl({{ (120 * count / response_count)|int }}, 65%, {{ 45 + (25 * count / response_count)|int }}%);{% endif %}"
                                 {% if mode == 'heatmap' %}tabindex="-1"{% endif %}>
@@ -76,12 +92,14 @@
                 {% if idx is not none %}
                     {% set count = heatmap.get(idx, 0) %}
                     {% set is_selected = idx in selected_slots %}
+                    {% set attendees = slot_attendees.get(idx, []) if slot_attendees is defined else [] %}
                     <button type="button"
                             class="grid-cell{% if is_weekend %} weekend{% endif %}{% if is_selected %} selected{% endif %}"
                             data-index="{{ idx }}"
                             data-day="{{ day.isoformat() }}"
                             data-time="{{ '%02d:%02d'|format(start_minute // 60, start_minute % 60) }}"
                             data-count="{{ count }}"
+                            {% if attendees %}data-attendees="{{ attendees|tojson }}"{% endif %}
                             aria-label="{{ label }} {{ '%02d:%02d'|format(start_minute // 60, start_minute % 60) }}{% if mode == 'heatmap' and response_count > 0 %}, {{ 'grid_cell_available'|tr(count=count, total=response_count) }}{% endif %}"
                             style="{% if mode == 'heatmap' and response_count > 0 %}background-color: hsl({{ (120 * count / response_count)|int }}, 65%, {{ 45 + (25 * count / response_count)|int }}%);{% endif %}"
                             {% if mode == 'heatmap' %}tabindex="-1"{% endif %}>

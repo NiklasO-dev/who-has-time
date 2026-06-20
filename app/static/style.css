@@ -79,6 +79,14 @@ footer {
     align-items: center;
 }
 
+.action-row form {
+    display: contents;
+}
+
+.action-row a[role="button"] {
+    margin: 0;
+}
+
 .share-section {
     margin: 1.5rem 0;
 }
@@ -332,6 +340,18 @@ footer {
     color: #dc3545;
 }
 
+.edit-link-section {
+    margin-top: 1.25rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--pico-muted-border-color);
+}
+
+.edit-link-hint {
+    font-size: 0.9rem;
+    color: var(--pico-muted-color);
+    margin-bottom: 0.75rem;
+}
+
 .grid-wrapper {
     overflow: auto;
     max-height: 70vh;
@@ -508,6 +528,34 @@ footer {
     margin-top: 0.75rem;
     font-size: 0.85rem;
     color: var(--pico-muted-color);
+}
+
+.grid-slot-tooltip {
+    position: fixed;
+    z-index: 1000;
+    max-width: min(16rem, calc(100vw - 1rem));
+    padding: 0.45rem 0.65rem;
+    border-radius: var(--pico-border-radius);
+    background: var(--pico-background-color);
+    border: 1px solid var(--pico-muted-border-color);
+    box-shadow: var(--pico-box-shadow);
+    font-size: 0.85rem;
+    line-height: 1.35;
+    pointer-events: none;
+}
+
+.grid-slot-tooltip ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.grid-slot-tooltip li + li {
+    margin-top: 0.15rem;
+}
+
+.availability-grid[data-mode="heatmap"] .grid-cell[data-attendees] {
+    cursor: help;
 }
 
 .legend-bar {

@@ -15,6 +15,7 @@ from app.grid import (
 )
 from app.i18n import translate
 from app.models import Poll, Response
+from app.routes.public import build_edit_url
 from app.security import validate_csrf_token
 
 bp = Blueprint("participant", __name__)
@@ -71,10 +72,10 @@ def _grid_context(poll: Poll, mode: str = "select", response: Response | None = 
 @bp.route("/poll/<participant_token>")
 def view_poll(participant_token: str):
     poll = _get_poll(participant_token)
-    response_id = request.args.get("response_id")
+    edit_token = request.args.get("edit")
     response = None
-    if response_id:
-        response = Response.query.filter_by(id=response_id, poll_id=poll.id).first()
+    if edit_token:
+        response = Response.query.filter_by(edit_token=edit_token, poll_id=poll.id).first()
     return render_template(
         "poll/grid.html",
         **_grid_context(poll, mode="select", response=response),
@@ -90,15 +91,17 @@ def view_results(participant_token: str):
     )
 
 
-@bp.route("/poll/<participant_token>/responses/<response_id>")
-def get_response(participant_token: str, response_id: str):
+@bp.route("/poll/<participant_token>/responses/<edit_token>")
+def get_response(participant_token: str, edit_token: str):
     poll = _get_poll(participant_token)
-    response = Response.query.filter_by(id=response_id, poll_id=poll.id).first()
+    response = Response.query.filter_by(edit_token=edit_token, poll_id=poll.id).first()
     if not response:
         abort(404)
     return jsonify(
         {
             "id": response.id,
+            "edit_token": response.edit_token,
+            "edit_url": build_edit_url(poll.participant_token, response.edit_token),
             "display_name": response.display_name,
             "selected_slots": response.get_slot_indices(),
             "updated_at": response.updated_at.isoformat(),
@@ -143,14 +146,16 @@ def save_response(participant_token: str):
             return jsonify({"error": _t("error_slot_range")}), 400
         indices.append(index)
 
-    response_id = data.get("response_id")
-    if response_id:
-        response = Response.query.filter_by(id=response_id, poll_id=poll.id).first()
+    edit_token = data.get("edit_token")
+    created = False
+    if edit_token:
+        response = Response.query.filter_by(edit_token=edit_token, poll_id=poll.id).first()
         if not response:
             return jsonify({"error": _t("error_response_not_found")}), 404
     else:
         response = Response(poll_id=poll.id, display_name=display_name)
         db.session.add(response)
+        created = True
 
     response.display_name = display_name
     response.set_slot_indices(indices)
@@ -160,6 +165,9 @@ def save_response(participant_token: str):
     return jsonify(
         {
             "id": response.id,
+            "edit_token": response.edit_token,
+            "edit_url": build_edit_url(poll.participant_token, response.edit_token),
+            "created": created,
             "display_name": response.display_name,
             "selected_slots": response.get_slot_indices(),
             "response_count": len(poll.responses),

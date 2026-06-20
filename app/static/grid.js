@@ -21,35 +21,51 @@
     var nameInput = document.getElementById("display-name");
     var saveBtn = document.getElementById("save-availability");
     var saveStatus = document.getElementById("save-status");
-    var responseId = config.responseId || null;
+    var editLinkSection = document.getElementById("edit-link-section");
+    var editUrlInput = document.getElementById("edit-url");
+    var editToken = config.editToken || null;
 
     var i18n = config.i18n || {};
     var storageKey = config.storageKey;
     var nameKey = storageKey + "_name";
-    var responseKey = storageKey + "_response_id";
+    var editKey = storageKey + "_edit";
+
+    function showEditLink(url) {
+        if (!editLinkSection || !editUrlInput || !url) return;
+        editUrlInput.value = url;
+        editLinkSection.hidden = false;
+    }
 
     function loadFromStorage() {
-        if (responseId) return;
-        var storedId = localStorage.getItem(responseKey);
+        if (editToken) {
+            if (config.editUrl) showEditLink(config.editUrl);
+            return;
+        }
+        var storedToken = localStorage.getItem(editKey);
         var storedName = localStorage.getItem(nameKey);
         if (storedName && nameInput && !nameInput.value) {
             nameInput.value = storedName;
         }
-        if (storedId && config.loadUrlBase) {
-            var url = config.loadUrlBase.replace("__ID__", encodeURIComponent(storedId));
+        if (storedToken && config.loadUrlBase) {
+            var url = config.loadUrlBase.replace("__TOKEN__", encodeURIComponent(storedToken));
             fetch(url)
                 .then(function (r) {
                     if (!r.ok) throw new Error("not found");
                     return r.json();
                 })
                 .then(function (data) {
-                    responseId = data.id;
+                    editToken = data.edit_token;
                     selected = new Set(data.selected_slots);
                     if (nameInput) nameInput.value = data.display_name;
                     syncCells();
+                    if (data.edit_url) {
+                        showEditLink(data.edit_url);
+                    } else if (data.edit_token && config.editUrlBase) {
+                        showEditLink(config.editUrlBase.replace("__TOKEN__", encodeURIComponent(data.edit_token)));
+                    }
                 })
                 .catch(function () {
-                    localStorage.removeItem(responseKey);
+                    localStorage.removeItem(editKey);
                 });
         }
     }
@@ -174,7 +190,7 @@
                 body: JSON.stringify({
                     display_name: name,
                     selected_slots: Array.from(selected),
-                    response_id: responseId
+                    edit_token: editToken
                 })
             })
                 .then(function (r) {
@@ -186,11 +202,15 @@
                     if (!result.ok) {
                         throw new Error(result.data.error || "Save failed");
                     }
-                    responseId = result.data.id;
-                    localStorage.setItem(responseKey, responseId);
+                    editToken = result.data.edit_token;
+                    localStorage.setItem(editKey, editToken);
+                    localStorage.removeItem(storageKey + "_response_id");
                     localStorage.setItem(nameKey, name);
                     if (result.data.heatmap) {
                         updateHeatmapCells(result.data.heatmap, result.data.response_count);
+                    }
+                    if (result.data.created && result.data.edit_url) {
+                        showEditLink(result.data.edit_url);
                     }
                     setStatus(i18n.saved || "Saved!", "success");
                 })
@@ -202,4 +222,78 @@
 
     syncCells();
     loadFromStorage();
+
+    var attendeeCells = grid.querySelectorAll(".grid-cell[data-attendees]");
+    if (attendeeCells.length) {
+        var tooltip = document.createElement("div");
+        tooltip.className = "grid-slot-tooltip";
+        tooltip.setAttribute("role", "tooltip");
+        tooltip.hidden = true;
+        document.body.appendChild(tooltip);
+
+        function hideTooltip() {
+            tooltip.hidden = true;
+        }
+
+        function showTooltip(cell) {
+            var raw = cell.getAttribute("data-attendees");
+            if (!raw) {
+                hideTooltip();
+                return;
+            }
+            var names;
+            try {
+                names = JSON.parse(raw);
+            } catch (err) {
+                hideTooltip();
+                return;
+            }
+            if (!names.length) {
+                hideTooltip();
+                return;
+            }
+
+            tooltip.textContent = "";
+            var list = document.createElement("ul");
+            names.forEach(function (name) {
+                var item = document.createElement("li");
+                item.textContent = name;
+                list.appendChild(item);
+            });
+            tooltip.appendChild(list);
+            tooltip.hidden = false;
+            tooltip.style.visibility = "hidden";
+
+            var rect = cell.getBoundingClientRect();
+            var tipRect = tooltip.getBoundingClientRect();
+            var left = rect.left + rect.width / 2 - tipRect.width / 2;
+            var top = rect.top - tipRect.height - 8;
+
+            if (left < 8) left = 8;
+            if (left + tipRect.width > window.innerWidth - 8) {
+                left = window.innerWidth - tipRect.width - 8;
+            }
+            if (top < 8) {
+                top = rect.bottom + 8;
+            }
+
+            tooltip.style.left = left + "px";
+            tooltip.style.top = top + "px";
+            tooltip.style.visibility = "";
+        }
+
+        attendeeCells.forEach(function (cell) {
+            cell.addEventListener("mouseenter", function () {
+                showTooltip(cell);
+            });
+            cell.addEventListener("mouseleave", hideTooltip);
+            cell.addEventListener("focus", function () {
+                showTooltip(cell);
+            });
+            cell.addEventListener("blur", hideTooltip);
+        });
+
+        grid.addEventListener("mouseleave", hideTooltip);
+        window.addEventListener("scroll", hideTooltip, true);
+    }
 })();

@@ -89,9 +89,15 @@ def build_participant_url(participant_token: str) -> str:
     return f"{_app_base_url()}{url_for('participant.view_poll', participant_token=participant_token)}"
 
 
+def build_edit_url(participant_token: str, edit_token: str) -> str:
+    path = url_for("participant.view_poll", participant_token=participant_token)
+    return f"{_app_base_url()}{path}?edit={edit_token}"
+
+
 @bp.app_context_processor
 def url_helpers():
     return {
         "build_admin_url": build_admin_url,
         "build_participant_url": build_participant_url,
+        "build_edit_url": build_edit_url,
     }

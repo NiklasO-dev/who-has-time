@@ -35,10 +35,27 @@ def _migrate_schema() -> None:
         statements.append(
             "ALTER TABLE polls ADD COLUMN picked_dates TEXT NOT NULL DEFAULT '[]'"
         )
+    if "responses" in inspector.get_table_names():
+        response_columns = {col["name"] for col in inspector.get_columns("responses")}
+        if "edit_token" not in response_columns:
+            statements.append("ALTER TABLE responses ADD COLUMN edit_token VARCHAR(64)")
+
     if statements:
         with db.engine.begin() as conn:
             for stmt in statements:
                 conn.execute(text(stmt))
+
+    if "responses" in inspector.get_table_names():
+        from app.models import Response
+        from app.security import generate_token
+
+        missing = Response.query.filter(
+            (Response.edit_token.is_(None)) | (Response.edit_token == "")
+        ).all()
+        if missing:
+            for response in missing:
+                response.edit_token = generate_token()
+            db.session.commit()
 
 
 def create_app(config_class: type = Config) -> Flask:

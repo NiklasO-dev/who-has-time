@@ -92,6 +92,9 @@ class Response(db.Model):
         String(36), primary_key=True, default=lambda: str(uuid.uuid4())
     )
     poll_id: Mapped[int] = mapped_column(ForeignKey("polls.id"), nullable=False)
+    edit_token: Mapped[str] = mapped_column(
+        String(64), unique=True, nullable=False, default=generate_token
+    )
     display_name: Mapped[str] = mapped_column(String(100), nullable=False)
     selected_slots: Mapped[str] = mapped_column(Text, nullable=False, default="[]")
     created_at: Mapped[datetime] = mapped_column(

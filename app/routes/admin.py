@@ -6,6 +6,7 @@ from app import db
 from app.grid import (
     calendar_weeks,
     compute_heatmap,
+    compute_slot_attendees,
     day_labels,
     generate_slots,
     slot_map,
@@ -50,6 +51,8 @@ def _grid_context(poll: Poll, mode: str = "heatmap"):
         "responses": responses,
         "selected_slots": [],
         "slot_indices": slot_map(poll),
+        "slot_attendees": compute_slot_attendees(responses),
+        "show_grid_tabs": False,
         "participant_url": build_participant_url(poll.participant_token),
         "admin_url": build_admin_url(poll.admin_token),
     }
