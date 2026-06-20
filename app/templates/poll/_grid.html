@@ -11,6 +11,7 @@
         <button type="button" class="grid-tab active" data-tab="heatmap" role="tab" aria-selected="true">{{ t.grid_tab_heatmap }}</button>
         {% endif %}
     </div>
+    <p id="grid-heatmap-empty" class="empty-state" hidden>{{ t.grid_no_responses_heatmap }}</p>
     {% endif %}
 
     {% if mode == 'select' and can_edit %}

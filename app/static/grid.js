@@ -70,6 +70,9 @@
         }
     }
 
+    var participantForm = document.querySelector(".participant-form");
+    var heatmapEmpty = document.getElementById("grid-heatmap-empty");
+
     function syncCells() {
         grid.querySelectorAll(".grid-cell[data-index]").forEach(function (cell) {
             var idx = parseInt(cell.getAttribute("data-index"), 10);
@@ -77,25 +80,69 @@
         });
     }
 
+    function heatmapColor(count, total) {
+        if (total <= 0 || count <= 0) return "";
+        var ratio = count / total;
+        var hue = Math.round(120 * ratio);
+        var lightness = 45 + Math.round(25 * ratio);
+        return "hsl(" + hue + ", 65%, " + lightness + "%)";
+    }
+
+    function setCellCountBadge(cell, count, show) {
+        var countEl = cell.querySelector(".cell-count");
+        if (show && count > 0) {
+            if (!countEl) {
+                countEl = document.createElement("span");
+                countEl.className = "cell-count";
+                cell.appendChild(countEl);
+            }
+            countEl.textContent = String(count);
+        } else if (countEl) {
+            countEl.remove();
+        }
+    }
+
+    function responseTotal() {
+        return parseInt(grid.getAttribute("data-response-count"), 10) || config.responseCount || 0;
+    }
+
+    function applyHeatmapView() {
+        var total = responseTotal();
+        grid.querySelectorAll(".grid-cell[data-index]").forEach(function (cell) {
+            var count = parseInt(cell.getAttribute("data-count"), 10) || 0;
+            cell.style.backgroundColor = heatmapColor(count, total);
+            setCellCountBadge(cell, count, total > 0);
+        });
+        updateHeatmapEmptyState(total);
+    }
+
+    function applySelectView() {
+        grid.querySelectorAll(".grid-cell[data-index]").forEach(function (cell) {
+            cell.style.backgroundColor = "";
+            setCellCountBadge(cell, 0, false);
+        });
+        syncCells();
+        updateHeatmapEmptyState();
+    }
+
+    function updateHeatmapEmptyState(total) {
+        if (!heatmapEmpty) return;
+        if (total === undefined) total = responseTotal();
+        heatmapEmpty.hidden = activeTab !== "heatmap" || total > 0;
+    }
+
     function updateHeatmapCells(heatmap, total) {
+        grid.setAttribute("data-response-count", String(total));
+        config.responseCount = total;
         grid.querySelectorAll(".grid-cell[data-index]").forEach(function (cell) {
             var idx = parseInt(cell.getAttribute("data-index"), 10);
-            var count = heatmap[idx] || 0;
-            cell.setAttribute("data-count", String(count));
-            if (total > 0) {
-                var ratio = count / total;
-                var hue = Math.round(120 * ratio);
-                var lightness = 45 + Math.round(25 * ratio);
-                cell.style.backgroundColor = "hsl(" + hue + ", 65%, " + lightness + "%)";
-                var countEl = cell.querySelector(".cell-count");
-                if (!countEl) {
-                    countEl = document.createElement("span");
-                    countEl.className = "cell-count";
-                    cell.appendChild(countEl);
-                }
-                countEl.textContent = String(count);
-            }
+            cell.setAttribute("data-count", String(heatmap[idx] || 0));
         });
+        if (activeTab === "heatmap") {
+            applyHeatmapView();
+        } else {
+            updateHeatmapEmptyState(total);
+        }
     }
 
     function setTab(tab) {
@@ -106,7 +153,14 @@
             btn.classList.toggle("active", isActive);
             btn.setAttribute("aria-selected", isActive ? "true" : "false");
         });
-        syncCells();
+        if (participantForm) {
+            participantForm.hidden = tab === "heatmap";
+        }
+        if (tab === "heatmap") {
+            applyHeatmapView();
+        } else {
+            applySelectView();
+        }
     }
 
     document.querySelectorAll(".grid-tab").forEach(function (btn) {

@@ -504,7 +504,7 @@ footer .footer-source {
     margin-top: 0.15rem;
 }
 
-.grid-cell.selected {
+.availability-grid[data-mode="select"] .grid-cell.selected {
     background: var(--wht-selected) !important;
     border-color: var(--wht-selected-dark);
 }
