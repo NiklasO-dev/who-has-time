@@ -8,6 +8,7 @@ Participants paint their free time on a grid; the heatmap shows when everyone ov
 
 - Availability grid with click/drag selection (touch-friendly on mobile)
 - Two capability URLs per poll: admin (manage) and participant (submit availability)
+- Personal edit link per response — after saving, participants get a URL to return and update their answer
 - SQLite backend, Docker-ready for Caddy reverse proxy
 - Mobile-first UI with Pico CSS, scales to desktop
 
@@ -83,8 +84,9 @@ Ensure `who-has-time` is covered by your wildcard `*.${APPS_DOMAIN}` record.
 |------|------|---------|
 | Admin | `/poll/admin/{admin_token}` | Manage poll, copy share link, view results |
 | Participant | `/poll/{participant_token}` | Submit availability, view heatmap |
+| Edit (personal) | `/poll/{participant_token}?edit={edit_token}` | Return to a saved response, pre-filled for editing |
 
-Keep both links private — they are the only access control.
+Keep all links private — they are the only access control. The participant link is shared with everyone; each person’s edit link is only for them.
 
 ## Environment variables
 
