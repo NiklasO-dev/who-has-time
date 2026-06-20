@@ -7,6 +7,7 @@ from app import db
 from app.grid import (
     calendar_weeks,
     compute_heatmap,
+    compute_slot_attendees,
     day_labels,
     generate_slots,
     slot_map,
@@ -78,6 +79,9 @@ def _grid_context(poll: Poll, mode: str = "select", response: Response | None = 
         "response": response,
         "can_edit": not poll.is_closed,
         "email_enabled": smtp_enabled(),
+        "slot_attendees": (
+            compute_slot_attendees(responses) if poll.show_names_on_heatmap else {}
+        ),
     }
 
 

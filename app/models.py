@@ -2,7 +2,7 @@ import json
 import uuid
 from datetime import date, datetime, timezone
 
-from sqlalchemy import Date, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app import db
@@ -34,6 +34,9 @@ class Poll(db.Model):
     day_start_minute: Mapped[int] = mapped_column(Integer, nullable=False, default=480)
     day_end_minute: Mapped[int] = mapped_column(Integer, nullable=False, default=1320)
     slot_minutes: Mapped[int] = mapped_column(Integer, nullable=False, default=30)
+    show_names_on_heatmap: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=utcnow
     )
