@@ -165,6 +165,34 @@ def format_minute(minute: int) -> str:
     return _format_minute(minute)
 
 
+def format_selected_slots_overview(poll: Poll, indices: list[int], lang: str = "en") -> list[str]:
+    from app.i18n import format_date_short
+
+    if not indices:
+        return []
+
+    index_set = set(indices)
+    slots = [slot for slot in generate_slots(poll) if slot.index in index_set]
+
+    if poll.is_whole_day:
+        return [format_date_short(slot.day, lang) for slot in slots]
+
+    by_day: dict[date, list[SlotInfo]] = {}
+    for slot in slots:
+        by_day.setdefault(slot.day, []).append(slot)
+
+    lines: list[str] = []
+    for day in sorted(by_day.keys()):
+        day_slots = by_day[day]
+        day_label = format_date_short(day, lang)
+        if len(day_slots) == 1:
+            lines.append(f"{day_label} — {day_slots[0].time_label}")
+        else:
+            times = ", ".join(slot.time_label for slot in day_slots)
+            lines.append(f"{day_label} — {times}")
+    return lines
+
+
 def heatmap_color(count: int, total: int) -> str:
     if total <= 0 or count <= 0:
         return "hsl(0, 70%, 92%)"

@@ -24,6 +24,9 @@
     var editLinkSection = document.getElementById("edit-link-section");
     var editUrlInput = document.getElementById("edit-url");
     var editToken = config.editToken || null;
+    var sendLinkBtn = document.getElementById("send-edit-link");
+    var sendLinkEmail = document.getElementById("edit-link-email");
+    var sendLinkStatus = document.getElementById("send-link-status");
 
     var i18n = config.i18n || {};
     var storageKey = config.storageKey;
@@ -227,6 +230,12 @@
         saveStatus.className = "save-status" + (type ? " " + type : "");
     }
 
+    function setSendLinkStatus(msg, type) {
+        if (!sendLinkStatus) return;
+        sendLinkStatus.textContent = msg;
+        sendLinkStatus.className = "send-link-status" + (type ? " " + type : "");
+    }
+
     if (saveBtn) {
         saveBtn.addEventListener("click", function () {
             var name = nameInput ? nameInput.value.trim() : "";
@@ -270,6 +279,50 @@
                 })
                 .catch(function (err) {
                     setStatus(err.message || i18n.saveFailed || "Save failed.", "error");
+                });
+        });
+    }
+
+    if (sendLinkBtn && config.sendEditLinkUrl) {
+        sendLinkBtn.addEventListener("click", function () {
+            if (!editToken) {
+                setSendLinkStatus(i18n.saveFirst || i18n.saveFailed || "Save first.", "error");
+                return;
+            }
+            var email = sendLinkEmail ? sendLinkEmail.value.trim() : "";
+            if (!email) {
+                setSendLinkStatus(i18n.emailRequired || "Please enter your email.", "error");
+                return;
+            }
+            setSendLinkStatus(i18n.sendingLink || "Sending…");
+            sendLinkBtn.disabled = true;
+            fetch(config.sendEditLinkUrl, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRF-Token": config.csrfToken
+                },
+                body: JSON.stringify({
+                    edit_token: editToken,
+                    email: email
+                })
+            })
+                .then(function (r) {
+                    return r.json().then(function (data) {
+                        return { ok: r.ok, data: data };
+                    });
+                })
+                .then(function (result) {
+                    if (!result.ok) {
+                        throw new Error(result.data.error || "Send failed");
+                    }
+                    setSendLinkStatus(i18n.linkSent || "Link sent!", "success");
+                })
+                .catch(function (err) {
+                    setSendLinkStatus(err.message || i18n.linkSendFailed || "Could not send link.", "error");
+                })
+                .finally(function () {
+                    sendLinkBtn.disabled = false;
                 });
         });
     }

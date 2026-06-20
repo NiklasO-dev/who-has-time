@@ -9,6 +9,7 @@ Participants paint their free time on a grid; the heatmap shows when everyone ov
 - Availability grid with click/drag selection (touch-friendly on mobile)
 - Two capability URLs per poll: admin (manage) and participant (submit availability)
 - Personal edit link per response — after saving, participants get a URL to return and update their answer
+- Optional email delivery of edit links (configure SMTP in `.env`)
 - SQLite backend, Docker-ready for Caddy reverse proxy
 - Mobile-first UI with Pico CSS, scales to desktop
 
@@ -98,6 +99,12 @@ Keep all links private — they are the only access control. The participant lin
 | `MAX_POLL_DAYS` | `14` | Maximum date range for a poll |
 | `BEHIND_PROXY` | `1` | Enable ProxyFix for Caddy |
 | `WHT_ALLOW_DEV_SECRET` | unset | Set to `1` for local dev with a placeholder `SECRET_KEY` |
+| `SMTP_HOST` | unset | SMTP server hostname (enables “Send link” on participant page) |
+| `SMTP_PORT` | `587` | SMTP port |
+| `SMTP_USER` | unset | SMTP login username (if required) |
+| `SMTP_PASSWORD` | unset | SMTP login password (if required) |
+| `SMTP_FROM` | unset | Sender email address |
+| `SMTP_USE_TLS` | `1` | Use STARTTLS (`0` to disable) |
 
 Production requires a strong `SECRET_KEY`. The app refuses to start with a known dev default unless `WHT_ALLOW_DEV_SECRET=1`.
 

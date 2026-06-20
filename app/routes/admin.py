@@ -1,8 +1,11 @@
+import time
+from collections import defaultdict
 from datetime import datetime, timezone
 
-from flask import Blueprint, abort, current_app, g, redirect, render_template, request, url_for
+from flask import Blueprint, abort, current_app, g, jsonify, redirect, render_template, request, url_for
 
 from app import db
+from app.email import is_valid_email, send_poll_links_email, smtp_enabled
 from app.grid import (
     calendar_weeks,
     compute_heatmap,
@@ -20,6 +23,21 @@ from app.routes.public import build_admin_url, build_participant_url
 from app.security import validate_csrf_token
 
 bp = Blueprint("admin", __name__)
+
+_email_rate_limits: dict[str, list[float]] = defaultdict(list)
+_EMAIL_RATE_WINDOW = 60
+_EMAIL_RATE_MAX = 5
+
+
+def _check_rate_limit_email() -> bool:
+    ip = request.remote_addr or "unknown"
+    now = time.time()
+    hits = [t for t in _email_rate_limits[ip] if now - t < _EMAIL_RATE_WINDOW]
+    if len(hits) >= _EMAIL_RATE_MAX:
+        return False
+    hits.append(now)
+    _email_rate_limits[ip] = hits
+    return True
 
 
 def _t(key: str, **kwargs) -> str:
@@ -55,6 +73,7 @@ def _grid_context(poll: Poll, mode: str = "heatmap"):
         "show_grid_tabs": False,
         "participant_url": build_participant_url(poll.participant_token),
         "admin_url": build_admin_url(poll.admin_token),
+        "email_enabled": smtp_enabled(),
     }
 
 
@@ -64,6 +83,44 @@ def dashboard(admin_token: str):
     ctx = _grid_context(poll, mode="heatmap")
     ctx["admin_url"] = request.url
     return render_template("admin/dashboard.html", **ctx)
+
+
+@bp.route("/poll/admin/<admin_token>/send-links", methods=["POST"])
+def send_links(admin_token: str):
+    poll = _get_poll(admin_token)
+
+    if not smtp_enabled():
+        return jsonify({"error": _t("error_email_not_configured")}), 503
+
+    if not _check_rate_limit_email():
+        return jsonify({"error": _t("error_rate_limit")}), 429
+
+    token = request.headers.get("X-CSRF-Token") or request.form.get("csrf_token")
+    if not validate_csrf_token(current_app.config["SECRET_KEY"], token):
+        return jsonify({"error": _t("error_csrf")}), 400
+
+    data = request.get_json(silent=True) or {}
+    email = (data.get("email") or "").strip().lower()
+    if not email:
+        return jsonify({"error": _t("error_email_required")}), 400
+    if not is_valid_email(email):
+        return jsonify({"error": _t("error_email_invalid")}), 400
+
+    participant_url = build_participant_url(poll.participant_token)
+    admin_url = build_admin_url(poll.admin_token)
+    try:
+        send_poll_links_email(
+            to_email=email,
+            poll=poll,
+            participant_url=participant_url,
+            admin_url=admin_url,
+            lang=g.lang,
+        )
+    except Exception:
+        current_app.logger.exception("Failed to send poll links email to %s", email)
+        return jsonify({"error": _t("error_email_send_failed")}), 500
+
+    return jsonify({"ok": True})
 
 
 @bp.route("/poll/admin/<admin_token>/edit", methods=["GET", "POST"])

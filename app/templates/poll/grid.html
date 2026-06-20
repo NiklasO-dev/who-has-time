@@ -45,17 +45,24 @@
         editUrl: {{ (build_edit_url(poll.participant_token, response.edit_token) if response else none)|tojson }},
         editUrlBase: {{ build_edit_url(poll.participant_token, '__TOKEN__')|tojson }},
         saveUrl: {{ url_for('participant.save_response', participant_token=poll.participant_token)|tojson }},
+        sendEditLinkUrl: {{ url_for('participant.send_edit_link', participant_token=poll.participant_token)|tojson }},
+        emailEnabled: {{ email_enabled|tojson }},
         loadUrlBase: {{ url_for('participant.get_response', participant_token=poll.participant_token, edit_token='__TOKEN__')|tojson }},
         storageKey: "wht_" + {{ poll.participant_token|tojson }},
         i18n: {
             nameRequired: {{ t.js_name_required|tojson }},
             saving: {{ t.js_saving|tojson }},
             saved: {{ t.js_saved|tojson }},
-            saveFailed: {{ t.js_save_failed|tojson }}
+            saveFailed: {{ t.js_save_failed|tojson }},
+            emailRequired: {{ t.js_email_required|tojson }},
+            sendingLink: {{ t.js_sending_link|tojson }},
+            linkSent: {{ t.js_link_sent|tojson }},
+            linkSendFailed: {{ t.js_link_send_failed|tojson }},
+            saveFirst: {{ t.js_save_first|tojson }}
         }
     };
 </script>
-<script src="{{ url_for('static', filename='grid.js') }}?v=6"></script>
+<script src="{{ url_for('static', filename='grid.js') }}?v=7"></script>
 <script>
 (function () {
     var navLink = document.getElementById("nav-how-it-works");

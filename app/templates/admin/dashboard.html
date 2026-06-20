@@ -31,6 +31,17 @@
             <button type="button" class="outline copy-btn" data-copy-target="admin-url">{{ t.copy_btn }}</button>
         </div>
         <small>{{ t.admin_admin_link_hint }}</small>
+
+        {% if email_enabled %}
+        <label for="admin-links-email">{{ t.admin_send_links_label }}</label>
+        <div class="copy-row send-link-row">
+            <input type="email" id="admin-links-email" class="copy-input"
+                   placeholder="{{ t.grid_email_placeholder }}" maxlength="254" autocomplete="email">
+            <button type="button" id="send-admin-links" class="outline">{{ t.admin_send_links_btn }}</button>
+        </div>
+        <span id="send-links-status" class="send-link-status" aria-live="polite"></span>
+        <small>{{ t.admin_send_links_hint }}</small>
+        {% endif %}
     </section>
 
     <section class="poll-meta">
@@ -90,6 +101,16 @@
 
 {% block scripts %}
 <script>
+    window.WHT_ADMIN = {
+        csrfToken: {{ csrf_token|tojson }},
+        sendLinksUrl: {{ url_for('admin.send_links', admin_token=poll.admin_token)|tojson }},
+        i18n: {
+            emailRequired: {{ t.js_email_required|tojson }},
+            sendingLink: {{ t.js_sending_link|tojson }},
+            linkSent: {{ t.js_link_sent|tojson }},
+            linkSendFailed: {{ t.js_link_send_failed|tojson }}
+        }
+    };
     window.WHT_GRID = {
         mode: "heatmap",
         csrfToken: {{ csrf_token|tojson }},
@@ -108,5 +129,6 @@
         }
     };
 </script>
-<script src="{{ url_for('static', filename='grid.js') }}?v=6"></script>
+<script src="{{ url_for('static', filename='admin.js') }}?v=1"></script>
+<script src="{{ url_for('static', filename='grid.js') }}?v=7"></script>
 {% endblock %}

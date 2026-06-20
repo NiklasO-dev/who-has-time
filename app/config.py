@@ -25,6 +25,12 @@ class Config:
     GIT_REPO_URL = "https://github.com/NiklasO-dev/who-has-time"
     MAX_POLL_DAYS = int(os.environ.get("MAX_POLL_DAYS", "14"))
     ALLOWED_SLOT_MINUTES = (15, 30, 60)
+    SMTP_HOST = os.environ.get("SMTP_HOST", "")
+    SMTP_PORT = int(os.environ.get("SMTP_PORT", "587"))
+    SMTP_USER = os.environ.get("SMTP_USER", "")
+    SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD", "")
+    SMTP_FROM = os.environ.get("SMTP_FROM", "")
+    SMTP_USE_TLS = os.environ.get("SMTP_USE_TLS", "1").lower() in ("1", "true", "yes")
 
 
 def is_dev_mode() -> bool:

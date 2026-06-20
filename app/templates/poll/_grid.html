@@ -31,6 +31,14 @@
                        value="{% if response %}{{ build_edit_url(poll.participant_token, response.edit_token) }}{% endif %}">
                 <button type="button" class="outline copy-btn" data-copy-target="edit-url">{{ t.copy_btn }}</button>
             </div>
+            {% if email_enabled %}
+            <div class="copy-row send-link-row">
+                <input type="email" id="edit-link-email" class="copy-input"
+                       placeholder="{{ t.grid_email_placeholder }}" maxlength="254" autocomplete="email">
+                <button type="button" id="send-edit-link" class="outline">{{ t.grid_send_link_btn }}</button>
+            </div>
+            <span id="send-link-status" class="send-link-status" aria-live="polite"></span>
+            {% endif %}
         </div>
     </div>
     {% elif mode == 'select' and not can_edit %}

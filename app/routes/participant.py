@@ -15,14 +15,17 @@ from app.grid import (
 )
 from app.i18n import translate
 from app.models import Poll, Response
+from app.email import is_valid_email, send_edit_link_email, smtp_enabled
 from app.routes.public import build_edit_url
 from app.security import validate_csrf_token
 
 bp = Blueprint("participant", __name__)
 
 _rate_limits: dict[str, list[float]] = defaultdict(list)
+_email_rate_limits: dict[str, list[float]] = defaultdict(list)
 _RATE_WINDOW = 60
 _RATE_MAX = 30
+_EMAIL_RATE_MAX = 5
 
 
 def _t(key: str, **kwargs) -> str:
@@ -36,15 +39,23 @@ def _get_poll(participant_token: str) -> Poll:
     return poll
 
 
-def _check_rate_limit() -> bool:
+def _check_rate_limit(store: dict[str, list[float]], max_hits: int) -> bool:
     ip = request.remote_addr or "unknown"
     now = time.time()
-    hits = [t for t in _rate_limits[ip] if now - t < _RATE_WINDOW]
-    if len(hits) >= _RATE_MAX:
+    hits = [t for t in store[ip] if now - t < _RATE_WINDOW]
+    if len(hits) >= max_hits:
         return False
     hits.append(now)
-    _rate_limits[ip] = hits
+    store[ip] = hits
     return True
+
+
+def _check_rate_limit_save() -> bool:
+    return _check_rate_limit(_rate_limits, _RATE_MAX)
+
+
+def _check_rate_limit_email() -> bool:
+    return _check_rate_limit(_email_rate_limits, _EMAIL_RATE_MAX)
 
 
 def _grid_context(poll: Poll, mode: str = "select", response: Response | None = None):
@@ -66,6 +77,7 @@ def _grid_context(poll: Poll, mode: str = "select", response: Response | None = 
         "slot_indices": slot_map(poll),
         "response": response,
         "can_edit": not poll.is_closed,
+        "email_enabled": smtp_enabled(),
     }
 
 
@@ -115,7 +127,7 @@ def save_response(participant_token: str):
     if poll.is_closed:
         return jsonify({"error": _t("error_poll_closed")}), 403
 
-    if not _check_rate_limit():
+    if not _check_rate_limit_save():
         return jsonify({"error": _t("error_rate_limit")}), 429
 
     token = request.headers.get("X-CSRF-Token") or request.form.get("csrf_token")
@@ -174,3 +186,48 @@ def save_response(participant_token: str):
             "heatmap": heatmap,
         }
     )
+
+
+@bp.route("/poll/<participant_token>/responses/send-edit-link", methods=["POST"])
+def send_edit_link(participant_token: str):
+    poll = _get_poll(participant_token)
+
+    if not smtp_enabled():
+        return jsonify({"error": _t("error_email_not_configured")}), 503
+
+    if not _check_rate_limit_email():
+        return jsonify({"error": _t("error_rate_limit")}), 429
+
+    token = request.headers.get("X-CSRF-Token") or request.form.get("csrf_token")
+    if not validate_csrf_token(current_app.config["SECRET_KEY"], token):
+        return jsonify({"error": _t("error_csrf")}), 400
+
+    data = request.get_json(silent=True) or {}
+    edit_token = (data.get("edit_token") or "").strip()
+    if not edit_token:
+        return jsonify({"error": _t("error_response_not_found")}), 400
+
+    response = Response.query.filter_by(edit_token=edit_token, poll_id=poll.id).first()
+    if not response:
+        return jsonify({"error": _t("error_response_not_found")}), 404
+
+    email = (data.get("email") or "").strip().lower()
+    if not email:
+        return jsonify({"error": _t("error_email_required")}), 400
+    if not is_valid_email(email):
+        return jsonify({"error": _t("error_email_invalid")}), 400
+
+    edit_url = build_edit_url(poll.participant_token, response.edit_token)
+    try:
+        send_edit_link_email(
+            to_email=email,
+            poll=poll,
+            response=response,
+            edit_url=edit_url,
+            lang=g.lang,
+        )
+    except Exception:
+        current_app.logger.exception("Failed to send edit link email to %s", email)
+        return jsonify({"error": _t("error_email_send_failed")}), 500
+
+    return jsonify({"ok": True})
