@@ -77,6 +77,7 @@
   "admin_delete": "Löschen",
   "admin_delete_confirm": "Diese Umfrage endgültig löschen?",
   "admin_responses_title": "Antworten",
+  "admin_top_results_title": "Beste Treffer",
   "admin_response_slots_one": "{count} Slot",
   "admin_response_slots_many": "{count} Slots",
   "admin_response_updated": "aktualisiert",

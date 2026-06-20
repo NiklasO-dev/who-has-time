@@ -96,6 +96,23 @@
 </section>
 {% endif %}
 
+{% if top_results %}
+<section class="top-results">
+    <h2>{{ t.admin_top_results_title }}</h2>
+    <ol class="top-results-list">
+        {% for result in top_results %}
+        <li>
+            <strong>{{ result.label }}</strong>
+            — {{ 'grid_cell_available'|tr(count=result.count, total=result.total) }}
+            {% if result.attendees %}
+            <small class="top-result-attendees">({{ result.attendees|join(', ') }})</small>
+            {% endif %}
+        </li>
+        {% endfor %}
+    </ol>
+</section>
+{% endif %}
+
 {% include "poll/_grid.html" %}
 {% endblock %}
 

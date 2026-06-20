@@ -112,6 +112,19 @@ footer .footer-source {
     border-bottom: 1px solid var(--pico-muted-border-color);
 }
 
+.top-results-list {
+    margin: 0;
+    padding-left: 1.25rem;
+}
+
+.top-results-list li {
+    padding: 0.35rem 0;
+}
+
+.top-result-attendees {
+    color: var(--pico-muted-color);
+}
+
 .empty-state {
     text-align: center;
     color: var(--pico-muted-color);

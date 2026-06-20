@@ -77,6 +77,7 @@
   "admin_delete": "Delete",
   "admin_delete_confirm": "Delete this poll permanently?",
   "admin_responses_title": "Responses",
+  "admin_top_results_title": "Top results",
   "admin_response_slots_one": "{count} slot",
   "admin_response_slots_many": "{count} slots",
   "admin_response_updated": "updated",
