@@ -5,3 +5,4 @@ __pycache__/
 *.pyc
 *.pyo
 *.db
+who_has_time.egg-info/
