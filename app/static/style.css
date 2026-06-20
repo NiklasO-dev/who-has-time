@@ -31,6 +31,11 @@ footer {
     text-align: center;
 }
 
+footer .footer-source {
+    display: block;
+    margin-top: 0.35rem;
+}
+
 .form-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;

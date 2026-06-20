@@ -1,6 +1,7 @@
 {
   "site_name": "Wer hat Zeit?",
   "site_tagline": "Finde einen Termin für alle — ohne Benutzerkonto.",
+  "footer_source": "Quellcode auf GitHub",
   "nav_home": "Start",
   "nav_how_to_use": "So funktioniert's",
   "lang_label": "Sprache",

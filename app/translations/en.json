@@ -1,6 +1,7 @@
 {
   "site_name": "Who Has Time?",
   "site_tagline": "Find a time that works for everyone — no account needed.",
+  "footer_source": "Source on GitHub",
   "nav_home": "Home",
   "nav_how_to_use": "How it works",
   "lang_label": "Language",

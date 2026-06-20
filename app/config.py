@@ -22,6 +22,7 @@ class Config:
     )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     APP_BASE_URL = os.environ.get("APP_BASE_URL", "").rstrip("/")
+    GIT_REPO_URL = "https://github.com/NiklasO-dev/who-has-time"
     MAX_POLL_DAYS = int(os.environ.get("MAX_POLL_DAYS", "14"))
     ALLOWED_SLOT_MINUTES = (15, 30, 60)
 
